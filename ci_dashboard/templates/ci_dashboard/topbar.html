@@ -1,0 +1,62 @@
+{% load helpers %}
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-main" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+      </button>
+      <a class="navbar-brand" href="{% url 'ci_dashboard_index' %}">CI Status Dashboard</a>
+    </div>
+
+  <div class="collapse navbar-collapse" id="navbar-left">
+      <ul class="nav navbar-nav">
+        <li><a href="{% url 'ci_dashboard_dashboard' %}">Dashboard View</a></li>
+      </ul>
+
+    <div class="collapse navbar-collapse" id="navbar-main">
+      <ul class="nav navbar-nav navbar-right">
+        {% if user.is_authenticated and user.is_active %}
+          <p class="navbar-text" id="countdown-timer" data-toggle="tooltip" data-placement="bottom" title="Time from the latest complete sync">{{ last_sync }}</p>
+
+          {% if user|can_manage_statuses %}
+            <li>
+              <p class="navbar-btn">
+                <a class="btn btn-success" href="{% url 'status_new' %}">New Status</a>
+              </p>
+            </li>
+          {% endif %}
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+              Signed in as {{ user.username }}
+              <span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu">
+              {% if user.is_superuser %}
+                <li>
+                  <a class="" href="/admin">Admin Panel</a>
+                </li>
+              {% endif %}
+              {% if user|can_manage_statuses %}
+                <li><a href="{% url 'import_file' %}">Import CIs</a></li>
+              {% endif %}
+              <li><a href="{% url 'logout' %}?next=/">Logout</a></li>
+            </ul>
+          </li>
+
+        {% else %}
+          <p class="navbar-text" id="countdown-timer" data-toggle="tooltip" data-placement="bottom" title="Time from the latest complete sync">{{ last_sync }}</p>
+
+          <li>
+            <p class="navbar-btn">
+              <a class="btn btn-success" href="{% url 'login' %}?next={{ request.path }}">Login</a>
+            </p>
+          </li>
+        {% endif %}
+      </ul>
+
+    </div><!-- /.navbar-collapse -->
+
+  </div><!-- /.container-fluid -->
+</nav>

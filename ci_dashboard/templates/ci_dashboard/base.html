@@ -1,0 +1,47 @@
+{% load staticfiles %}
+{% load static_asset %}
+<!doctype html>
+<html class="no-js" lang="en-us">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>CI Status Dashboard{% block title %}{% endblock %}</title>
+        <meta name="description" content="CI status and health tracker">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="apple-touch-icon" href="{% static 'images/apple-touch-icon.png' %}">
+        <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+        <link rel="stylesheet" href="{% static_asset 'stylesheets/application.css' %}">
+    </head>
+    <body>
+        <!--[if lt IE 8]>
+            <p class="browserupgrade">
+                You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.
+            </p>
+        <![endif]-->
+        <header>
+            {% include 'ci_dashboard/topbar.html' %}
+        </header>
+        <main>
+            <div class="container-fluid">
+              <div class="row">
+                <div class="col-sm-12 col-md-offset-1 col-md-10">
+                  {% include 'ci_dashboard/messages.html' %}
+                </div>
+              </div>
+
+              {% block content %}{% endblock %}
+            </div>
+        </main>
+        <footer>
+            {% block footer %}
+              <div class="container-fluid">
+                {% include 'ci_dashboard/footer.html' %}
+              </div>
+            {% endblock %}
+        </footer>
+
+      <script src="{% static_asset 'javascripts/application.js' %}"></script>
+      <script src="{% static_asset 'javascripts/bootstrap.js' %}"></script>
+    </body>
+</html>

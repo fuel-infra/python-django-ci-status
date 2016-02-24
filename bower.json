@@ -1,0 +1,22 @@
+{
+  "name": "ci_dashboard",
+  "authors": [
+    "abuhayeu@mirantis.com"
+  ],
+  "description": "CI status dashboard UI components",
+  "moduleType": [
+    "globals"
+  ],
+  "license": "Apache License 2.0",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "bootstrap-sass": "~3.3.6"
+  }
+}

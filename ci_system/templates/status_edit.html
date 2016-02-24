@@ -1,0 +1,11 @@
+{% extends "ci_dashboard/base.html" %}
+{% load helpers %}
+
+{% block title %}
+  | Edit Status
+{% endblock %}
+
+{% block content %}
+  <h1 class="text-center">Edit Status</h1>
+  {% include 'status_form.html' %}
+{% endblock %}

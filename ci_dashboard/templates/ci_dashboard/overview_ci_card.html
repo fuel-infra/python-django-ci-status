@@ -1,0 +1,30 @@
+{% load helpers %}
+
+<div class="product-card separate-card">
+  {% if ci.latest_status %}
+    <div class="circle-icon {{ ci.latest_status|status_color }}">
+      <span>{{ ci.latest_status.status_text }}</span>
+    </div>
+    <div class="product-info">
+      <h4><a href="{{ ci.url }}" target="_blank">{{ ci.name }}</a></h4>
+      <p>{{ ci.latest_status.last_changed_at|timesince }}</p>
+      <hr>
+      <p>{{ ci.latest_status.summary }}</p>
+      <a href="{% url 'status_detail' ci.latest_status.pk %}" class="btn btn-default btn-block">
+        See Details
+      </a>
+      <a href="#" data-tab="panel{{ number }}v" class="ci-card-link btn btn-info btn-block">
+        CI Statuses History
+      </a>
+    </div>
+  {% else %}
+    <div class="product-info">
+      <p>
+      <a href="{{ ci.url }}" target="_blank">{{ ci.name }}</a>
+      </p>
+      <hr>
+      <p>Not analyzed yet.</p>
+    </div>
+  {% endif %}
+</div>
+

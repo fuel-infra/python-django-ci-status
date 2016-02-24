@@ -1,0 +1,92 @@
+{% extends "ci_dashboard/base.html" %}
+{% load helpers %}
+
+{% block content %}
+  <section class="ci-status-history">
+    <div class="page-header">
+      <h1 class="text-center">Status History for CI System: <a href="{{ ci.url }}" target="_blank">{{ ci.name }}</a></h1>
+    </div>
+
+    {% if statuses %}
+      <div class="row">
+        <div class="col-sm-12 col-md-offset-1 col-md-10">
+          {% for status in statuses %}
+            {% include "ci_dashboard/status_list_item.html" with status=status %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-sm-12 col-md-offset-1 col-md-10 text-center">
+          <nav>
+            <ul class="pagination">
+              {% if statuses.has_previous %}
+                <li>
+                  <a href="?page={{ statuses.previous_page_number }}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                  </a>
+                </li>
+              {% endif %}
+
+              {% for page in statuses.paginator.page_range %}
+                <li class="{% if page == statuses.number %} active {% endif %}">
+                  <a href="?page={{ page }}">{{ page }}</a>
+                </li>
+              {% endfor %}
+
+              {% if statuses.has_next %}
+                <li>
+                  <a href="?page={{ statuses.next_page_number }}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                  </a>
+                </li>
+              {% endif %}
+            </ul>
+          </nav>
+
+        </div>
+      </div>
+     {% else %}
+       <div class="row">
+         <div class="col-sm-12 col-md-offset-1 col-md-10">
+           {% include "ci_dashboard/not_enough_data_panel.html" %}
+         </div>
+       </div>
+     {% endif %}
+
+  </section>
+{% endblock %}
+
+
+
+<div class="product-card">
+  <div class="product-info">
+    <h3>
+     <a href="#">{{ pci.name }}</a>
+     <span class="label label-{{ pci|current_status_by_version:version_tuple.0|status_color }}">
+       {{ pci|current_status_by_version:version_tuple.0|status_text_for_type }}
+     </span>
+    </h3>
+
+    <h4><small>{{ pci|active_status_time:version_tuple.0 }}</small></h4>
+  </div>
+
+
+  <a href="#show-more-{{ pci.pk }}-{{version_tuple.1}}" class="btn btn-default btn-block" role="button" data-toggle="collapse" aria-expanded="false" aria-controls="show-more-{{ pci.pk }}-{{version_tuple.1}}">Click To Show Details</a>
+  <div class="collapse" id="show-more-{{ pci.pk }}-{{version_tuple.1}}">
+    <ul class="list-group jobs-list">
+      {% for rule_check in pci|latest_rule_checks_by_version:version_tuple.0|sorted_by_rule_name %}
+      <li class="list-group-item">
+        <a class="job-link" href="{{ rule_check.link_to_ci }}" target="_blank">
+          <small>
+            {{ rule_check.rule.rule_type_text }} <em>{{ rule_check.rule.name }} #{{ rule_check.build_number }}</em>
+          </small>
+        </a>
+        <span class="label label-{{rule_check.status_type|status_color }} {% if rule_check.running %}blink{%endif%}">
+          {{ rule_check.status_text }}
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>

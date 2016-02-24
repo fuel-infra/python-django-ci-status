@@ -1,0 +1,53 @@
+{% extends "ci_dashboard/base.html" %}
+
+{% load helpers %}
+
+{% block title %}
+  | Login
+{% endblock %}
+
+{% block content %}
+  <h1 class="text-center">Login</h1>
+
+  <div class="row">
+    <div class="col-sm-12 col-md-offset-3 col-md-6">
+
+      <form method="post" action="{% url 'django.contrib.auth.views.login' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}" />
+
+        {% if form.errors %}
+          <div class="has-error">
+            <label class="control-label">Your username and password didn't match. Please try again.</label>
+          </div>
+
+          <div class="form-group has-error">
+            <label class="control-label">{{ form.username.label_tag }}</label>
+            {{ form.username|add_class:'form-control' }}
+          </div>
+          <div class="form-group has-error">
+            <label class="control-label">{{ form.password.label_tag }}</label>
+            {{ form.password|add_class:'form-control' }}
+          </div>
+        {% else %}
+          <div class="form-group">
+            <label class="control-label">{{ form.username.label_tag }}</label>
+            {{ form.username|add_class:'form-control' }}
+          </div>
+          <div class="form-group">
+            <label class="control-label">{{ form.password.label_tag }}</label>
+            {{ form.password|add_class:'form-control' }}
+          </div>
+        {% endif %}
+
+        <div class="form-actions">
+          <input type="submit" value="Login" class="btn btn-success" value="login"/>
+          <a class="btn btn-default" href="{% url 'ci_dashboard_index' %}">
+            Return to Dashboard
+          </a>
+        </div>
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

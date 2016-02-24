@@ -1,0 +1,16 @@
+*.pyc
+node_modules/
+
+bower_components/
+ci_dashboard/static/
+celerybeat-schedule
+.tox/
+secrets.yml
+settings.yaml
+
+
+# Packages
+*.egg
+*.egg-info
+dist
+build

@@ -1,0 +1,53 @@
+{% load helpers %}
+
+<div class="row">
+  <div class="col-sm-12">
+    <div class="status-card">
+      <div class="status-card-header">
+        <h3 class='with-label'>
+          {{ status.summary }}
+          <small>
+            (at {{ status.last_changed_at|date:"M d Y H:i:s" }})
+          </small>
+        </h3>
+        <a href="{% url 'status_detail' status.pk %}">(Details)</a>
+        <span class="label label-{{ status|status_color }} pull-right">
+          {{ status.status_text }}
+        </span>
+      </div>
+
+      <div class="status-card-body">
+        <p>
+          {{ status.description }}
+        </p>
+        {% if status.rule_checks %}
+          <ul class="list-group jobs-list">
+            {% for rule_check in status.rule_checks|sorted_by_rule_name %}
+              <li class="list-group-item">
+                <h4 class="with-label">
+                  {{ rule_check.rule.rule_type_text }} <em>{{ rule_check.rule.name }} #{{ rule_check.build_number }}</em> check status:
+                </h4>
+                <span class="label label-{{ rule_check.status_type|status_color }} {% if rule_check.running %}blink{%endif%}">
+                  {{ rule_check.status_text }}{% if rule_check.running %} ({{rule_check.running}} in progress){%endif%}
+                </span>
+
+                <ul class="list-inline">
+                  <li><a href="{{ ci.url }}" target="_blank">Jenkins Link</a></li>
+                  <li><a href="{{ rule_check.link_to_ci }}" target="_blank">Job Link</a></li>
+                </ul>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <hr>
+          <span>No rules were checked..</span>
+          <hr>
+        {% endif %}
+        <ul class="list-inline">
+          <li></li>
+          <li class="pull-right">Updated by: <em>{{ status.author_username }}</em></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

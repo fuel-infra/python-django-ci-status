@@ -1,0 +1,37 @@
+DEBUG: False
+TEMPLATE_DEBUG: False
+
+SECRET_KEY: 'HIDE ME'
+
+DATABASES:
+  default:
+    ENGINE: 'django.db.backends.mysql'
+    NAME: ci_dashboard_prod
+    USER: dashboard
+    PASSWORD: 'db password here'
+    HOST: localhost
+    PORT: ''
+
+AUTH_LDAP_SERVER_URI: 'ldap://custom_server.net'
+_LDAP_GROUP_SETTINGS: 'cn=mirantis,ou=groups,o=mirantis,dc=mirantis,dc=net'
+AUTH_LDAP_GROUP_SEARCH:
+  base_dn: 'ou=groups,o=mirantis,dc=mirantis,dc=net'
+  scope: 'SCOPE_SUBTREE'
+  filterstr: '(objectClass=groupOfNames)'
+AUTH_LDAP_USER_DN_TEMPLATE: 'uid=%(user)s,ou=people,o=mirantis,dc=mirantis,dc=net'
+AUTH_LDAP_USERS_BASE_DN: 'ou=people,o=mirantis,dc=mirantis,dc=net'
+AUTH_LDAP_GROUP_CACHE_TIMEOUT: 3600
+
+LDAP_GROUPS:
+  - 'devops-all'
+  - 'ci'
+
+INTERNAL_IPS:
+  - '127.0.0.1'
+
+CELERYBEAT_SCHEDULE:
+  every_ten_minutes:
+    task: 'ci_dashboard.tasks.synchronize'
+    schedule:
+      crontab:
+        minute: '*/10'

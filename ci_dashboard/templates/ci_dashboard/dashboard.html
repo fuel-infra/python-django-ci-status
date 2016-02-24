@@ -1,0 +1,100 @@
+{% extends "ci_dashboard/base.html" %}
+{% load helpers %}
+
+{% block content %}
+  <section class="dashboard-product-ci-statuses">
+    <h1 class="text-center">Product Statuses Summary</h1>
+    <div class="row">
+      <div class="col-sm-12 col-md-offset-1 col-md-10">
+        {% if products_with_versions %}
+          <div class="table-responsive">
+            <table class="table table-hover table-bordered table-striped">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Product Name</th>
+                  <th>Version</th>
+                  <th>Status</th>
+                  <th>Active From</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for number, version_name, version_code, pci, status in products_with_versions %}
+                  <tr class="{{ status|status_color }}">
+                    <th scope="row">{{ number }}</th>
+                    <td><a href="/#version-{{ version_code }}">{{ pci.name }}</a></td>
+                    <td>{{ version_name }}</td>
+                    <td>{{ status|status_text_for_type }}</td>
+                    <td>{{ pci|active_status_time:version_name }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          {% include "ci_dashboard/not_enough_data_panel.html" %}
+        {% endif %}
+      </div>
+    </div>
+  </section>
+  <section class="dashboard-ci-statuses">
+    <h1 class="text-center">CI Statuses Summary</h1>
+    {% if statuses_summaries %}
+      <div class="row">
+        <div class="col-sm-12 col-md-offset-1 col-md-10">
+          <div class="table-responsive">
+            <table class="table table-hover table-bordered table-striped">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>CI Name</th>
+                  <th>Status</th>
+                  <th>Summary</th>
+                  <th>Is Manual</th>
+                  <th>Updated by</th>
+                  <th>Rules Total / Failed</th>
+                  <th>Active From</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for number, status in statuses_summaries %}
+                  <tr class="{{ status|status_color }}">
+                    <th scope="row">{{ number }}</th>
+                    <td><a href="{{ status.ci_system.url }}" target="_blank">{{ status.ci_system.name }}</a></td>
+                    <td>{{ status.status_text }}</td>
+                    <td><a href="{% url 'status_detail' status.pk %}">{{ status.summary }}</a></td>
+                    <td>{{ status.is_manual }}</td>
+                    <td>{{ status.author_username }}</td>
+                    <td>{{ status.rule_checks|length }} / {{ status.failed_rule_checks|length }}</td>
+                    <td>{{ status.last_changed_at }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-sm-12 col-md-offset-1 col-md-10">
+          <div class="pull-right" data-toggle="buttons">
+            <label class="btn btn-default" data-toggle="tooltip" data-placement="left" title="If enabled page would be refreshed automatically every 5 minutes">
+              <input id="autorefresh-toggle" type="checkbox" autocomplete="off">
+              <span>Page Autorefresh: OFF</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+    {% else %}
+
+      <div class="row">
+        <div class="col-sm-12 col-md-offset-1 col-md-10">
+          {% include "ci_dashboard/not_enough_data_panel.html" %}
+        </div>
+      </div>
+
+    {% endif %}
+  </section>
+
+{% endblock %}

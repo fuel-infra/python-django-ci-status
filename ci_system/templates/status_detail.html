@@ -1,0 +1,83 @@
+{% extends "ci_dashboard/base.html" %}
+{% load helpers %}
+
+{% block title %}
+  | Status Details
+{% endblock %}
+
+{% block content %}
+  <h1 class="text-center push-down">Status Overview</h1>
+  <div class="row">
+    <div class="col-sm-12 col-md-offset-2 col-md-8">
+      <div class="product-card">
+
+        <div class="circle-icon {{ status_detail.status_type|status_color }}">
+          <span>{{ status_detail.status_text }}</span>
+        </div>
+        <div class="product-info">
+          <h3>
+            <a href="{{ status_detail.ci_system.url }}" target="_blank">{{ status_detail.ci_system.name }}</a>
+          </h3>
+          <p>{{ status_detail.last_changed_at|timesince }}</p>
+          <p>{{ status_detail.summary }}</p>
+          {% if status_detail.description %}
+            <hr>
+            <div class="info-block">
+              <p>
+                {{ status_detail.description }}
+              </p>
+            </div>
+          {% endif %}
+
+          {% if status_detail.rule_checks %}
+            <ul class="list-group">
+              {% for rule_check in status_detail.rule_checks|sorted_by_rule_name %}
+                <li class="list-group-item">
+                  <h4 class="with-label">
+                    {{ rule_check.rule.rule_type_text }} <em>{{ rule_check.rule.name }} #{{ rule_check.build_number }}</em>:
+                  </h4>
+                  <span class="label label-{{rule_check.status_type|status_color }} {% if rule_check.running %}blink{%endif%}">
+                    {{ rule_check.status_text }}{% if rule_check.running %} ({{rule_check.running}} in progress){%endif%}
+                  </span>
+
+                  <ul class="list-inline">
+                    <li><a href="{{ rule_check.link_to_ci }}" target="_blank">Job Link</a></li>
+                  </ul>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <hr>
+            <span>No rules were checked..</span>
+            <hr>
+          {% endif %}
+        </div>
+
+        <ul class="list-inline">
+          {% if user.is_authenticated and user.is_active and user|can_manage_statuses %}
+            <li>
+              <a class="btn btn-success" href="{% url 'status_edit' status_detail.pk %}">
+                Edit
+              </a>
+            </li>
+            <li>
+              <a class="btn btn-danger" href="{% url 'status_delete' status_detail.pk %}">
+                Delete
+              </a>
+            </li>
+            <li>
+              <a class="btn btn-default" href="{% url 'ci_dashboard_index' %}">
+                Return to Dashboard
+              </a>
+            </li>
+
+          {% endif %}
+
+          <li class="pull-right">
+            Updated by: <em>{{ status_detail.author_username }}</em>
+          </li>
+        </ul>
+      </div>
+     </div>
+  </div>
+{% endblock %}

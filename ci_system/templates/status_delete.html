@@ -1,0 +1,28 @@
+{% extends "ci_dashboard/base.html" %}
+{% load helpers %}
+
+{% block title %}
+  | Delete Status
+{% endblock %}
+
+{% block content %}
+  <h1 class="text-center">Delete Status</h1>
+
+  <div class="row">
+    <div class="col-sm-12 col-md-offset-2 col-md-8">
+      <div class="product-card">
+        <form method="post" action="{{ form_action }}">
+          <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
+          <h4>
+            Are you sure you want to delete <mark>{{ status.status_text }} ({{ status.summary }})</mark> status for <mark>{{ status.ci_system.url }}</mark> from <mark>{{ status.last_changed_at}}</mark> ?
+          </h4>
+          <div class="form-actions">
+            <input type="submit" value="Delete!" class="btn btn-danger"/>
+            <a class="btn btn-success" href="{% url 'status_detail' status.pk %}">
+              Cancel and Return to Status view
+            </a>
+          </div>
+        </form>
+    </div>
+  </div>
+{% endblock %}

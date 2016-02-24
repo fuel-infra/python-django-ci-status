@@ -1,0 +1,55 @@
+{% load helpers %}
+
+<div class="row">
+  <div class="col-sm-12 col-md-offset-2 col-md-8">
+    <div class="product-card">
+      {% if form_action %}
+        <form method="post" action='{{ form_action }}'>
+      {% else %}
+        <form method="post">
+      {% endif %}
+          <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
+          {% for field in form %}
+            {% if field.errors %}
+              {% if field|fieldtype == 'CheckboxInput' %}
+                <div class="has-error">
+                  <div class="checkbox">
+                    <label>
+                      {{ field }}{{ field.label }}
+                    </label>
+                  </div>
+                </div>
+              {% else %}
+                <div class="form-group has-error">
+                  <label for="{{ field.auto_id }}" class="control-label">{{ field.label }}</label>
+                  {{ field }}
+                  <span class="help-block">
+                    {% for error in  field.errors %}{{ error }}{% endfor %}
+                  </span>
+                </div>
+              {% endif %}
+            {% else %}
+              {% if field|fieldtype == 'CheckboxInput' %}
+                <div class="checkbox">
+                  <label>
+                    {{ field }}{{ field.label }}
+                  </label>
+                </div>
+              {% else %}
+                <div class="form-group">
+                  <label for="{{ field.auto_id }}" class="control-label">{{ field.label }}</label>
+                  {{ field }}
+                </div>
+                {% endif %}
+            {% endif %}
+          {% endfor %}
+          <div class="form-actions">
+            <input type="submit" value="Submit" class="btn btn-success"/>
+            <a class="btn btn-danger" href="{% url 'ci_dashboard_index' %}">
+              Cancel and Return to Dashboard
+            </a>
+          </div>
+        </form>
+    </div>
+  </div>
+</div>

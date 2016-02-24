@@ -1,0 +1,96 @@
+{% extends "ci_dashboard/base.html" %}
+{% load helpers %}
+
+{% block content %}
+  {% if product_cis %}
+    <section class="statuses-by-version">
+      <h1 class="text-center">Product Status By Version</h1>
+      <div class="row">
+        <div class="col-sm-12 col-md-offset-1 col-md-10">
+          <ul class="nav nav-tabs" role="tablist">
+            {% for index, version_name, version_code in versions %}
+                <li role="presentation" {% if index == 1 %}class="active"{% endif %}>
+                  <a href="#version-{{ version_code }}" aria-controls="version-{{ version_code }}" aria-expanded="true" role="tab" data-toggle="tab">{{ version_name }}</a>
+                </li>
+            {% endfor %}
+          </ul>
+
+
+          <div class="row push-top">
+            <div class="tab-content">
+              {% for index, version_name, version_code in versions %}
+                <div class="tab-pane {% if index == 1 %}active{% endif %}" role="tabpanel" id="version-{{ version_code }}">
+                  {% for pci in product_cis %}
+                    {% if pci|latest_rule_checks_by_version:version_name %}
+                      <div class="col-sm-12 col-md-4">
+                        {% include "ci_dashboard/product_ci_card.html" with pci=pci %}
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="statuses-overview">
+    <h1 class="push-down text-center">CI Statuses and Health</h1>
+    <div class="row">
+      <div class="col-sm-12 col-md-offset-1 col-md-10">
+
+        <ul class="nav nav-pills nav-stacked col-md-2" role="tablist">
+          <li role="presentation" class="active">
+            <a href="#panel1v" aria-controls="panel1v" aria-expanded="true" role="tab" data-toggle="tab">
+              <h5>Overview</h5>
+            </a>
+          </li>
+          {% for number, ci in ci_systems_with_index %}
+            <li role="presentation">
+              <a href="#panel{{ number }}v" aria-controls="panel{{ number }}v" role="tab" data-toggle="tab">
+                <h5 class='with-label'>{{ ci.name }}</h5>
+                {% if ci.latest_status %}
+                  <span class="{{ ci.latest_status|status_color }} badge pull-right">
+                    S
+                  </span>
+                {% endif %}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+
+        <div class="tab-content col-md-9">
+          <div class="tab-pane active" role="tabpanel" id="panel1v">
+            {% for number, ci in ci_systems_with_index %}
+              <div class="col-sm-12 col-md-4 col-lg-3">
+                {% include "ci_dashboard/overview_ci_card.html" with ci=ci number=number %}
+              </div>
+            {% endfor %}
+          </div>
+
+          {% for number, ci in ci_systems_with_index %}
+            <div class="tab-pane" role="tabpanel" id="panel{{ number }}v">
+              <div class="row">
+                <div class="col-sm-12">
+                  {% for status in ci.status_set.all|slice:":10" %}
+                    {% include "ci_dashboard/status_list_item.html" with status=status %}
+                  {% endfor %}
+                  <div class="panel panel-default">
+                    <div class="panel-body text-center">
+                      Only first 10 items are shown. Click <a href="{% url 'ci_status_history' ci.pk %}">here</a> to access the full history.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+      </div>
+    </div>
+  </section>
+{% endblock %}
