@@ -1,11 +1,14 @@
+from django.conf import settings
 from django.contrib.auth.models import Group, Permission
 from django.core.management.base import BaseCommand, CommandError
 
-from ci_system.constants import LDAP_GROUPS, LDAP_USER_PERMISSIONS
+from ci_system.constants import LDAP_USER_PERMISSIONS
 
 
 class Command(BaseCommand):
-    help = 'Maps LDAP groups to application permissions'
+    help = 'Set groups {} as staff'.format(
+        ", ".join(settings.STAFF_GROUPS)
+    )
 
     def handle(self, *args, **options):
         try:
@@ -17,11 +20,9 @@ class Command(BaseCommand):
             raise CommandError(
                 'Default application permission "%s" is missed' % perm)
 
-        for ldap_group in LDAP_GROUPS:
-            group, created = Group.objects.get_or_create(name=ldap_group)
-
-            if created:
-                group.permissions.add(*permissions)
-                group.save()
+        for ldap_group in settings.STAFF_GROUPS:
+            group, _ = Group.objects.get_or_create(name=ldap_group)
+            group.permissions.add(*permissions)
+            group.save()
 
         self.stdout.write('LDAP groups was mapped successfully')

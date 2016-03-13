@@ -51,8 +51,6 @@ TRIGGER_MESSAGES = {
     TRIGGER_ANY: '',
 }
 
-LDAP_GROUPS = getattr(settings, 'LDAP_GROUPS', settings.DEFAULT_LDAP_GROUPS)
-
 LDAP_USER_PERMISSIONS = (
     action + '_' + model
     for action in ('add', 'change', 'delete')

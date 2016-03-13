@@ -137,6 +137,6 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 CELERY_ENABLE_UTC = True
 
-DEFAULT_LDAP_GROUPS = ('devops-all', 'ci')
+STAFF_GROUPS = ('ci', 'devops-all')
 
 site_settings.update_settings(globals(), 'CI_STATUS', '.:/etc/ci_status')

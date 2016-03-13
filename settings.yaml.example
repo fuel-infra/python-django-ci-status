@@ -22,9 +22,9 @@ AUTH_LDAP_USER_DN_TEMPLATE: 'uid=%(user)s,ou=people,o=mirantis,dc=mirantis,dc=ne
 AUTH_LDAP_USERS_BASE_DN: 'ou=people,o=mirantis,dc=mirantis,dc=net'
 AUTH_LDAP_GROUP_CACHE_TIMEOUT: 3600
 
-LDAP_GROUPS:
-  - 'devops-all'
+STAFF_GROUPS:
   - 'ci'
+  - 'devops-all'
 
 INTERNAL_IPS:
   - '127.0.0.1'

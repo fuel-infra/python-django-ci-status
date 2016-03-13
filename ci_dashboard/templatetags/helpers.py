@@ -1,4 +1,5 @@
 from django import template
+from django.conf import settings
 
 from ci_system import constants
 
@@ -29,12 +30,12 @@ def status_color(status):
 @register.filter(name='can_manage_statuses')
 def can_manage_statuses(user):
     if getattr(user, 'ldap_user', None):  # ldap users should have ldap groups
-        return bool(set(constants.LDAP_GROUPS) & user.ldap_user.group_names)
+        return bool(set(settings.STAFF_GROUPS) & user.ldap_user.group_names)
 
     # all others should belong to django group (if added manually)
     # or be the superuser
     return bool(
-        set(constants.LDAP_GROUPS) & {g.name for g in user.groups.all()}
+        set(settings.STAFF_GROUPS) & {g.name for g in user.groups.all()}
     ) or user.is_superuser
 
 
