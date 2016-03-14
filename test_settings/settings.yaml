@@ -1,0 +1,23 @@
+DEBUG: True
+TEMPLATE_DEBUG: True
+
+SECRET_KEY: test_key
+
+DATABASES:
+  default:
+    ENGINE: 'django.db.backends.sqlite3'
+    NAME: ci_dashboard_test
+
+AUTH_LDAP_SERVER_URI: 'ldap'
+_LDAP_GROUP_SETTINGS: 'cn=mirantis,ou=groups,o=mirantis,dc=mirantis,dc=net'
+AUTH_LDAP_USER_DN_TEMPLATE: 'uid=%(user)s,ou=people,o=mirantis,dc=mirantis,dc=net'
+AUTH_LDAP_USERS_BASE_DN: 'ou=people,o=mirantis,dc=mirantis,dc=net'
+AUTH_LDAP_GROUP_CACHE_TIMEOUT: 3600
+AUTH_LDAP_GROUP_SEARCH:
+  base_dn: 'ou=groups,o=mirantis,dc=mirantis,dc=net'
+  scope: 'SCOPE_SUBTREE'
+  filterstr: '(objectClass=groupOfNames)'
+
+STAFF_GROUPS:
+  - 'devops-all'
+  - 'ci'

@@ -31,11 +31,11 @@ class Rule(models.Model):
 
     ci_system = models.ForeignKey('ci_system.CiSystem',
                                   on_delete=models.CASCADE)
-    version = models.CharField(max_length=255, default='')
-    gerrit_refspec = models.CharField(max_length=255, default='')
-    gerrit_branch = models.CharField(max_length=255, default='')
+    version = models.CharField(max_length=255, default='', blank=True)
+    gerrit_refspec = models.CharField(max_length=255, default='', blank=True)
+    gerrit_branch = models.CharField(max_length=255, default='', blank=True)
     is_active = models.BooleanField(default=False)
-    last_updated = models.DateTimeField(null=True, default=None)
+    last_updated = models.DateTimeField(null=True, default=None, blank=True)
 
     class Meta:
         unique_together = (

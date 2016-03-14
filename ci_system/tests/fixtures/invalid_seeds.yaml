@@ -1,0 +1,21 @@
+  is_active: true
+  sticky_failure: true
+  password: ''
+  rules:
+  - name: 8.0.test_all
+    rule_type: 1
+    version: '7.0'
+  url: https://product-ci.infra.abc.net/
+  username: ''
+
+abc
+
+Fuel CI:
+  is_active: true
+  sticky_failure: false
+  password: ''
+  rules:
+  - name: fuellib_noop_tests
+    rule_type: 1
+  url: https://ci.fuel-abc.net/
+  username: ''

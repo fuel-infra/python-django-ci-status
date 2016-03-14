@@ -6,7 +6,8 @@ ci_dashboard/static/
 celerybeat-schedule
 .tox/
 secrets.yml
-settings.yaml
+/settings.yaml
+.coverage
 
 
 # Packages

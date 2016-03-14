@@ -4,6 +4,7 @@ import logging
 import yaml
 
 from django.db import models, IntegrityError
+from django.db.models.signals import pre_delete
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
@@ -226,9 +227,9 @@ class CiSystem(models.Model):
                     gerrit_branch=rule_dict.get('gerrit_branch', ''),
                 )
 
-                if rule_dict.get('is_active', None) is not None:
-                    rule.is_active = rule_dict.get('is_active')
-                    rule.save()
+                rule.is_active = rule_dict.get('is_active', False)
+                rule.full_clean()
+                rule.save()
 
                 new_rules.add((
                     rule_dict['name'],
@@ -333,6 +334,7 @@ class CiSystem(models.Model):
                     new_ci.is_active = ci.get('is_active', False)
                     new_ci.sticky_failure = ci.get('sticky_failure', False)
                     new_ci.url = ci['url']
+                    new_ci.full_clean()
                     new_ci.save()
 
                     rules, error = cls.create_rule_for_ci(ci['rules'], new_ci)
@@ -368,6 +370,7 @@ class CiSystem(models.Model):
                         new_product = ProductCi(name=product_name)
 
                     new_product.is_active = product.get('is_active', False)
+                    new_product.full_clean()
                     new_product.save()
 
                     product_rules, error = cls.find_rules_for_product(
@@ -678,8 +681,7 @@ class AbstractStatus(models.Model):
 
 class Status(AbstractStatus):
 
-    ci_system = models.ForeignKey(CiSystem,
-                                  on_delete=models.CASCADE)
+    ci_system = models.ForeignKey(CiSystem, on_delete=models.CASCADE)
 
     def get_absolute_url(self):
         return reverse('status_detail', kwargs={'pk': self.pk})
@@ -689,6 +691,12 @@ class Status(AbstractStatus):
 
     def failed_rule_checks(self):
         return self.rule_checks().filter(status_type=constants.STATUS_FAIL)
+
+    @staticmethod
+    def delele_unused_rulechecks(sender, instance, **kwargs):
+        for rule_check in instance.rule_checks():
+            if rule_check.status.count() == 1:
+                rule_check.delete()
 
     @staticmethod
     def get_type_by_check_results(rule_checks_mask):
@@ -703,11 +711,12 @@ class Status(AbstractStatus):
 
         return constants.STATUS_SKIP
 
+pre_delete.connect(Status.delele_unused_rulechecks, sender=Status)
+
 
 class ProductCiStatus(AbstractStatus):
 
-    product_ci = models.ForeignKey(ProductCi,
-                                   on_delete=models.CASCADE)
+    product_ci = models.ForeignKey(ProductCi, on_delete=models.CASCADE)
     version = models.CharField(max_length=255, default='')
 
     def get_absolute_url(self):

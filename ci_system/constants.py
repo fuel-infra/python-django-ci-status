@@ -1,5 +1,3 @@
-from django.conf import settings
-
 STATUS_SUCCESS = 1
 STATUS_FAIL = 2
 STATUS_SKIP = 4

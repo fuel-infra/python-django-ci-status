@@ -1,0 +1,189 @@
+ci_systems:
+- name: 'Product CI:'
+  url: https://product-ci.abc.net/
+  is_active: true
+  sticky_failure: true
+  password: ''
+  username: ''
+  rules:
+  - name: 8.0.test_all
+    rule_type: Job
+    version: '7.0'
+    is_active: true
+    trigger_type: 'Gerrit trigger'
+
+- name: 'Packaging CI:'
+  url: https://packaging-ci.abc.net/
+  is_active: true
+  sticky_failure: false
+  password: ''
+  username: ''
+  rules:
+  - name: Fuel 8.0
+    rule_type: View
+    version: '8.0'
+    is_active: true
+    trigger_type: 'Gerrit trigger'
+
+- name: 'Fuel CI:'
+  url: https://ci.fuel-abc.net/
+  is_active: true
+  sticky_failure: false
+  password: ''
+  username: ''
+  rules:
+  - name: fuellib_noop_tests
+    rule_type: Job
+    version: '8.0'
+    is_active: true
+    trigger_type: 'Gerrit trigger'
+
+- name: 'MOS Infra CI:'
+  url: https://jenkins.mosi.abc.net/
+  is_active: true
+  sticky_failure: false
+  password: ''
+  username: ''
+  rules:
+  - name: periodic-ceilometer-python27-mos70
+    rule_type: Job
+    version: '7.0'
+    is_active: true
+    trigger_type: 'Gerrit trigger'
+  - name: periodic-ceilometer-pep8-mos70
+    rule_type: Job
+    version: '7.0'
+    is_active: true
+    trigger_type: 'Gerrit trigger'
+
+- name: 'Old Stable CI:'
+  url: https://old-stable-ci.abc.net/
+  is_active: true
+  sticky_failure: false
+  password: ''
+  username: ''
+  rules:
+  - name: 5.0.3.centos.bvt_1
+    rule_type: Job
+    version: '5.0'
+    is_active: true
+    trigger_type: 'Gerrit trigger'
+
+- name: 'Patching CI:'
+  url: https://patching-ci.abc.net/
+  is_active: true
+  sticky_failure: false
+  password: ''
+  username: ''
+  rules:
+  - name: 7.0.swarm
+    rule_type: View
+    version: '7.0'
+    is_active: true
+    trigger_type: 'Gerrit trigger'
+
+- name: 'Plugins CI:'
+  url: https://plugins-ci.vm.abc.net/
+  is_active: true
+  sticky_failure: false
+  password: ''
+  username: ''
+  rules:
+  - name: fuel-plugin.calico.build
+    rule_type: Job
+    version: '8.0'
+    is_active: true
+    trigger_type: 'Gerrit trigger'
+  - name: fuel-plugin.contrail.tag
+    rule_type: Job
+    version: '7.0'
+    is_active: true
+    trigger_type: 'Gerrit trigger'
+
+- name: 'Infra CI:'
+  url: https://infra-ci.fuel-abc.net/
+  is_active: true
+  sticky_failure: false
+  password: ''
+  username: ''
+  rules:
+  - name: jenkins-jobs.check_shell
+    rule_type: Job
+    version: '7.0'
+    is_active: true
+    trigger_type: 'Gerrit trigger'
+
+- name: 'Jenkins Product:'
+  url: http://jenkins-product.srt.abc.net:8080/
+  is_active: true
+  sticky_failure: false
+  password: ''
+  username: ''
+  rules:
+  - name: 6.1.custom_system_test
+    rule_type: job
+    version: '7.0'
+    is_active: true
+    trigger_type: 'Gerrit trigger'
+
+- name: 'OSCI Jenkins:'
+  url: http://osci-jenkins.srt.abc.net/
+  is_active: true
+  sticky_failure: false
+  password: ''
+  username: ''
+  rules:
+  - name: 8.0-test
+    rule_type: View
+    version: '8.0'
+    is_active: true
+    trigger_type: 'Gerrit trigger'
+  - name: 6.1.mos.build-deb-deps
+    rule_type: Job
+    version: '6.1'
+    is_active: true
+    trigger_type: 'Gerrit trigger'
+  - name: 6.1.mos.build-deb-deps
+    version: '6.1'
+    rule_type: Job
+    is_active: true
+    trigger_type: 'Gerrit trigger'
+  - name: 6.1.mos.abort-package-testing
+    rule_type: Job
+    version: '6.1'
+    is_active: true
+    trigger_type: 'Gerrit trigger'
+
+product_statuses:
+- name: '7.0'
+  is_active: true
+  rules:
+  - name: 8.0.test_all
+    rule_type: Job
+    version: '7.0'
+    trigger_type: 'Gerrit trigger'
+    ci_system_name: 'Product CI:'
+  - name: 8.0-test
+    rule_type: View
+    version: '8.0'
+    trigger_type: 'Gerrit trigger'
+    ci_system_name: 'OSCI Jenkins:'
+
+- name: '8.0'
+  is_active: true
+  rules:
+  - name: 6.1.mos.build-deb-deps
+    rule_type: Job
+    version: '6.1'
+    trigger_type: 'Gerrit trigger'
+    ci_system_name: 'OSCI Jenkins:'
+  - name: jenkins-jobs.check_shell
+    rule_type: Job
+    version: '7.0'
+    trigger_type: 'Gerrit trigger'
+    ci_system_name: 'Infra CI:'
+  - name: fuel-plugin.calico.build
+    rule_type: Job
+    trigger_type: 'Gerrit trigger'
+    version: '8.0'
+    ci_system_name: 'Plugins CI:'
