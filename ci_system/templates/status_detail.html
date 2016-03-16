@@ -1,5 +1,6 @@
 {% extends "ci_dashboard/base.html" %}
 {% load helpers %}
+{% load rulecheck_link_to_ci %}
 
 {% block title %}
   | Status Details
@@ -41,7 +42,7 @@
                   </span>
 
                   <ul class="list-inline">
-                    <li><a href="{{ rule_check.link_to_ci }}" target="_blank">Job Link</a></li>
+                    <li>{% rulecheck_link_to_ci rule_check %}</li>
                   </ul>
                 </li>
               {% endfor %}

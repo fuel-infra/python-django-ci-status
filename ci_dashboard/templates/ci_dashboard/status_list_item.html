@@ -1,4 +1,5 @@
 {% load helpers %}
+{% load rulecheck_link_to_ci %}
 
 <div class="row">
   <div class="col-sm-12">
@@ -33,7 +34,7 @@
 
                 <ul class="list-inline">
                   <li><a href="{{ ci.url }}" target="_blank">Jenkins Link</a></li>
-                  <li><a href="{{ rule_check.link_to_ci }}" target="_blank">Job Link</a></li>
+                  <li>{% rulecheck_link_to_ci rule_check %}</li>
                 </ul>
               </li>
             {% endfor %}

@@ -1,4 +1,5 @@
 {% load helpers %}
+{% load rulecheck_link_to_ci %}
 
 <div class="product-card">
   <div class="product-info">
@@ -17,11 +18,7 @@
     <ul class="list-group jobs-list">
       {% for rule_check in pci|latest_rule_checks_by_version:version_name|sorted_by_rule_name %}
       <li class="list-group-item">
-        <a class="job-link" href="{{ rule_check.link_to_ci }}" target="_blank">
-          <small>
-            {{ rule_check.rule.rule_type_text }} <em>{{ rule_check.rule.name }} #{{ rule_check.build_number }}</em>
-          </small>
-        </a>
+        {% rulecheck_link_to_ci rule_check True %}
         <span class="label label-{{rule_check.status_type|status_color }} {% if rule_check.running %}blink{%endif%}">
           {{ rule_check.status_text }}
         </span>
