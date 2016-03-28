@@ -46,66 +46,50 @@ class CiSystem(models.Model):
 
         return status
 
-    def check_the_status(self):
-        previous_status = self.latest_status()
+    def _new_rulechecks_results(self):
         new_results = {}
 
         for rule in self.rule_set.filter(is_active=True):
-            try:
-                rule_check = self._process_the_rule(rule)
-            except JenkinsException as e:
-                LOGGER.traceback(e)
-                continue
+            rule_check = self._process_the_rule(rule)
 
             if not rule_check:
                 continue
 
             new_results[rule_check.rule.unique_name] = rule_check
 
-        # find previous status and its rule_checks to make sure that
-        # theirs build_numbers are not the same
-        if previous_status:
-            old_results = {
-                rc.rule.unique_name: rc
-                for rc in previous_status.rule_checks()
-            }
+        return new_results
 
-            if new_results == old_results:
-                return previous_status
+    def _set_skipped_status(self):
+        return self.status_set.create(
+            status_type=constants.STATUS_SKIP,
+            summary='No rules configured or all of them are invalid.',
+            last_changed_at=timezone.now(),
+        )
 
-        # in case all job checks are failed skip the status as wrong configured
-        if not new_results:
-            status = self.status_set.create(
-                status_type=constants.STATUS_SKIP,
-                summary='No rules configured or all of them are invalid.',
-                last_changed_at=timezone.now(),
-            )
-            return status
-
-        new_results = new_results.values()
-
+    def _get_status_type_for_results(self, statuses_types_list):
         # TODO: move checks severity to settings
-        checks_severity = [
+        checks_severity = (
             constants.STATUS_FAIL,
             constants.STATUS_SUCCESS,
             constants.STATUS_ABORTED,
             constants.STATUS_SKIP
-        ]
-        if not [i for i in checks_severity if type(i) is int]:
-            raise ValueError("checks_severity must be non-empty numeric list")
-
-        status_type = checks_severity[0]
+        )
+#        if not [i for i in checks_severity if type(i) is int]:
+#            raise ValueError("checks_severity must be non-empty numeric list")
 
         # find all checks that matches from high status to low
+        status_type = checks_severity[0]
         for status in checks_severity:
             result = 0
-            for rule_check in new_results:
+            for rule_check in statuses_types_list:
                 result |= rule_check.status_type
             if result & status:
                 status_type = status
                 break
 
-        # don't let sticky ci FAIL status be updated to SUCCESS automatically
+        return status_type
+
+    def _check_for_sticky_status(self, status_type, previous_status=None):
         if (
             self.sticky_failure and
             previous_status and
@@ -120,15 +104,41 @@ class CiSystem(models.Model):
         else:
             summary = 'Assigned automaticaly by a periodic task'
 
+        return status_type, summary
+
+    def check_the_status(self):
+        previous_status = self.latest_status()
+        new_results = self._new_rulechecks_results()
+
+        # find previous status and its rule_checks to make sure that
+        # theirs build_numbers are not the same
+        if previous_status:
+            old_results = {
+                rc.rule.unique_name: rc
+                for rc in previous_status.rule_checks()
+            }
+
+            if new_results == old_results:
+                return previous_status
+
+        # in case all job checks are failed skip the status as wrong configured
+        if not new_results:
+            return self._set_skipped_status()
+
+        new_results = new_results.values()
+        status_type = self._get_status_type_for_results(new_results)
+
+        # don't let sticky ci FAIL status be updated to SUCCESS automatically
+        status_type, summary = self._check_for_sticky_status(
+            status_type, previous_status)
+
         # in case status haven't changed leave the previous timestamp
         if previous_status and previous_status.status_type == status_type:
             last_changed_at = (
-                previous_status.last_changed_at or previous_status.created_at
-            )
+                previous_status.last_changed_at or previous_status.created_at)
         else:
-            max_rule_check_date = max(
+            last_changed_at = max(
                 rc.updated_at or rc.created_at for rc in new_results)
-            last_changed_at = max_rule_check_date
 
         status = self.status_set.create(
             status_type=status_type,
@@ -190,33 +200,25 @@ class CiSystem(models.Model):
 
     @classmethod
     def create_rule_for_ci(cls, rules_list, ci):
+        created = False
         result = []
-        error = None
-        previous_rules = {
-            (
-                r.name,
-                r.rule_type,
-                r.version,
-                r.trigger_type,
-                r.gerrit_refspec,
-                r.gerrit_branch
-            )
-            for r in ci.rule_set.filter(is_active=True)
-        }
         new_rules = set()
+        previous_rules = set(
+            ci.rule_set.filter(is_active=True).values_list('id', flat=True)
+        )
 
         for rule_dict in rules_list:
             try:
                 rule, created = Rule.objects.get_or_create(
                     name=rule_dict['name'],
+                    version=rule_dict['version'],
+                    ci_system=ci,
                     rule_type=Rule.type_by_name(
                         rule_dict.get(
                             'rule_type',
                             constants.DEFAULT_RULE_TYPE
                         )
                     ),
-                    ci_system=ci,
-                    version=rule_dict['version'],
                     trigger_type=Rule.trigger_type_by_name(
                         rule_dict.get(
                             'trigger_type',
@@ -229,53 +231,30 @@ class CiSystem(models.Model):
 
                 rule.is_active = rule_dict.get('is_active', False)
                 rule.full_clean()
-                rule.save()
-
-                new_rules.add((
-                    rule_dict['name'],
-                    Rule.type_by_name(
-                        rule_dict.get(
-                            'rule_type',
-                            constants.DEFAULT_RULE_TYPE
-                        )
-                    ),
-                    rule_dict['version'],
-                    Rule.trigger_type_by_name(
-                        rule_dict.get(
-                            'trigger_type',
-                            constants.DEFAULT_TRIGGER_TYPE
-                        )
-                    ),
-                    rule_dict.get('gerrit_refspec', ''),
-                    rule_dict.get('gerrit_branch', ''),
-                ))
-
                 result.append(rule)
             except (IntegrityError, ValidationError, KeyError) as exc:
                 msg = 'Can not create rule during CI import: %s'
-
                 LOGGER.error(msg, exc)
-                error = msg % exc
-                result = []
-                break
 
-        if previous_rules and error is None:
+                if created:
+                    rule.delete()
+
+                return [], msg % exc
+
+        for rule in result:
+            rule.save()
+            new_rules.add(rule.id)
+
+        if previous_rules:
             cls.deactivate_previous_rules(previous_rules, new_rules)
 
-        return result, error
+        return result, None
 
     @classmethod
     def deactivate_previous_rules(cls, previous_rules, new_rules):
-        for rule_tuple in previous_rules - new_rules:
+        for rule_id in previous_rules - new_rules:
             try:
-                rule = Rule.objects.get(
-                    name=rule_tuple[0],
-                    rule_type=rule_tuple[1],
-                    version=rule_tuple[2],
-                    trigger_type=rule_tuple[3],
-                    gerrit_refspec=rule_tuple[4],
-                    gerrit_branch=rule_tuple[5],
-                )
+                rule = Rule.objects.get(id=rule_id)
                 rule.is_active = False
                 rule.save()
             except Rule.DoesNotExist as exc:
@@ -317,151 +296,176 @@ class CiSystem(models.Model):
         if seeds:
             cis = seeds.get('ci_systems', [])
             result['cis_total'] = len(cis)
-            products = seeds.get('product_statuses', [])
-            result['ps_total'] = len(products)
 
             for ci in cis:
-                ci_name = ci['name']
-
-                try:
-                    try:
-                        new_ci = cls.objects.get(name=ci_name)
-                    except CiSystem.DoesNotExist:
-                        new_ci = CiSystem(name=ci_name)
-
-                    new_ci.username = ci.get('username', '')
-                    new_ci.password = ci.get('password', '')
-                    new_ci.is_active = ci.get('is_active', False)
-                    new_ci.sticky_failure = ci.get('sticky_failure', False)
-                    new_ci.url = ci['url']
-                    new_ci.full_clean()
-                    new_ci.save()
-
-                    rules, error = cls.create_rule_for_ci(ci['rules'], new_ci)
-                    if error:
-                        result['errors'].append(error)
-                        continue
-                except (IntegrityError, ValidationError) as exc:
-                    msg = (
-                        'Can not import CI: "%s" from the seeds file. '
-                        'Error(s) occured: %s'
-                    )
-                    LOGGER.error(msg, ci_name, exc)
-                    result['errors'].append(msg % (ci_name, exc))
-                except KeyError as exc:
-                    msg = (
-                        'Can not import CI: "%s" from the seeds file. '
-                        'Required parameter is missed: %s'
-                    )
-                    LOGGER.error(msg, ci_name, exc)
-                    result['errors'].append(msg % (ci_name, exc))
+                new_ci, error = cls._import_ci(ci)
+                if error:
+                    result['errors'].append(error)
                 else:
                     result['objects'].append(new_ci)
                     result['cis_imported'] += 1
                     new_cis.add(ci['url'])
 
+            products = seeds.get('product_statuses', [])
+            result['ps_total'] = len(products)
+
             for product in products:
-                product_name = product['name']
-
-                try:
-                    try:
-                        new_product = ProductCi.objects.get(name=product_name)
-                    except ProductCi.DoesNotExist:
-                        new_product = ProductCi(name=product_name)
-
-                    new_product.is_active = product.get('is_active', False)
-                    new_product.full_clean()
-                    new_product.save()
-
-                    product_rules, error = cls.find_rules_for_product(
-                        product.get('rules', [])
-                    )
-                    if error is not True:
-                        new_product.rules = product_rules
-                        new_product.save()
-                    else:
-                        result['errors'].append(
-                            'Product Status {} has invalid rules.'.format(
-                                new_product.name
-                            )
-                        )
-                        continue
-
-                except (IntegrityError, ValidationError) as exc:
-                    msg = (
-                        'Can not import ProductCi: "%s" from the seeds file. '
-                        'Error(s) occured: %s'
-                    )
-                    LOGGER.error(msg, product_name, exc)
-                    result['errors'].append(msg % (product_name, exc))
-                except KeyError as exc:
-                    msg = (
-                        'Can not import ProductCi: "%s" from the seeds file. '
-                        'Required parameter is missed: %s'
-                    )
-                    LOGGER.error(msg, product_name, exc)
-                    result['errors'].append(msg % (product_name, exc))
+                new_product, error = cls._import_product_status(product)
+                if error:
+                    result['errors'].append(error)
                 else:
                     result['objects'].append(new_product)
                     result['ps_imported'] += 1
-                    new_products_names.add(product_name)
+                    new_products_names.add(new_product.name)
 
-        cls.deactivate_previous_cis(previous_cis, new_cis)
-        ProductCi.deactivate_previous_products(
-            previous_products_names,
-            new_products_names
-        )
+            cls.deactivate_previous_cis(previous_cis, new_cis)
+            ProductCi.deactivate_previous_products(
+                previous_products_names,
+                new_products_names
+            )
 
         return result
+
+    @classmethod
+    def _import_ci(cls, ci):
+        try:
+            ci_name = ci.get('name', '')
+
+            try:
+                new_ci = cls.objects.get(name=ci_name)
+            except cls.DoesNotExist:
+                new_ci = cls(name=ci_name)
+
+            new_ci.username = ci.get('username', '')
+            new_ci.password = ci.get('password', '')
+            new_ci.is_active = ci.get('is_active', False)
+            new_ci.sticky_failure = ci.get('sticky_failure', False)
+            new_ci.url = ci['url']
+            new_ci.full_clean()
+            new_ci.save()
+
+            rules, error = cls.create_rule_for_ci(
+                ci.get('rules', []), new_ci
+            )
+            if error:
+                return None, error
+        except (IntegrityError, ValidationError) as exc:
+            msg = (
+                'Can not import CI: "%s" from the seeds file. '
+                'Error(s) occured: %s'
+            )
+            LOGGER.error(msg, ci_name, exc)
+            return None, msg % (ci_name, exc)
+        except KeyError as exc:
+            msg = (
+                'Can not import CI: "%s" from the seeds file. '
+                'Required parameter is missed: %s'
+            )
+            LOGGER.error(msg, ci_name, exc)
+            return None, msg % (ci_name, exc)
+
+        return new_ci, None
+
+    @classmethod
+    def _import_product_status(cls, product):
+        product_name = product.get('name', '')
+
+        try:
+            if not product_name:
+                raise KeyError('name')
+
+            try:
+                new_product = ProductCi.objects.get(name=product_name)
+            except ProductCi.DoesNotExist:
+                new_product = ProductCi(name=product_name)
+
+            new_product.is_active = product.get('is_active', False)
+            new_product.full_clean()
+            new_product.save()
+
+            product_rules, error = cls.find_rules_for_product(
+                product.get('rules', [])
+            )
+            if error is not True:
+                new_product.rules = product_rules
+                new_product.save()
+            else:
+                return None, 'Product Status {} has invalid rules.'.format(
+                   new_product.name
+                )
+        except (IntegrityError, ValidationError) as exc:
+            msg = (
+                'Can not import ProductCi: "%s" from the seeds file. '
+                'Error(s) occured: %s'
+            )
+            LOGGER.error(msg, product_name, exc)
+            return None, msg % (product_name, exc)
+        except KeyError as exc:
+            msg = (
+                'Can not import ProductCi: "%s" from the seeds file. '
+                'Required parameter is missed: %s'
+            )
+            LOGGER.error(msg, product_name, exc)
+            return None, msg % (product_name, exc)
+
+        return new_product, None
 
     @classmethod
     def find_rules_for_product(cls, rules_dicts):
         rules = []
 
         for rule_dict in rules_dicts:
-            try:
-                ci = cls.objects.get(name=rule_dict['ci_system_name'])
+            rule, error = cls._rule_by_dict(rule_dict)
 
-                rule = Rule.objects.get(
-                    name=rule_dict['name'],
-                    rule_type=Rule.type_by_name(
-                        rule_dict.get(
-                            'rule_type',
-                            constants.DEFAULT_RULE_TYPE
-                        )
-                    ),
-                    version=rule_dict['version'],
-                    ci_system_id=ci.pk,
-                    trigger_type=Rule.trigger_type_by_name(
-                        rule_dict.get(
-                            'trigger_type',
-                            constants.DEFAULT_TRIGGER_TYPE
-                        )
-                    ),
-                    gerrit_refspec=rule_dict.get('gerrit_refspec', ''),
-                    gerrit_branch=rule_dict.get('gerrit_branch', ''),
-                )
-            except cls.DoesNotExist as exc:
-                LOGGER.error(
-                    'Can not find CiSystem mentioned in rule '
-                    'for Product Status during import: %s',
-                    exc)
-            except Rule.DoesNotExist as exc:
-                LOGGER.error(
-                    'Can not find the rule for Product Status '
-                    'during import: %s',
-                    exc
-                )
-            except KeyError as exc:
-                LOGGER.error(
-                    'Rule for Product Status configure improperly: %s', exc)
-            else:
-                rules.append(rule)
-                continue
+            if error:
+                return [], True
 
-            return rules, True
+            rules.append(rule)
 
         return rules, False
+
+    @classmethod
+    def _rule_by_dict(cls, rule_dict):
+        try:
+            ci = cls.objects.get(name=rule_dict['ci_system_name'])
+
+            rule = Rule.objects.get(
+                name=rule_dict['name'],
+                rule_type=Rule.type_by_name(
+                    rule_dict.get(
+                        'rule_type',
+                        constants.DEFAULT_RULE_TYPE
+                    )
+                ),
+                version=rule_dict['version'],
+                ci_system_id=ci.pk,
+                trigger_type=Rule.trigger_type_by_name(
+                    rule_dict.get(
+                        'trigger_type',
+                        constants.DEFAULT_TRIGGER_TYPE
+                    )
+                ),
+                gerrit_refspec=rule_dict.get('gerrit_refspec', ''),
+                gerrit_branch=rule_dict.get('gerrit_branch', ''),
+            )
+        except cls.DoesNotExist as exc:
+            LOGGER.error(
+                'Can not find CiSystem mentioned in rule '
+                'for Product Status during import: %s',
+                exc)
+        except Rule.DoesNotExist as exc:
+            LOGGER.error(
+                'Can not find the rule for Product Status '
+                'during import: %s',
+                exc
+            )
+        except KeyError as exc:
+            LOGGER.error(
+                'Rule for Product Status configure improperly: %s', exc)
+        else:
+            return rule, False
+
+        return None, True
 
     @classmethod
     def deactivate_previous_cis(cls, previous_cis, new_cis):
@@ -472,8 +476,8 @@ class CiSystem(models.Model):
                 ci.save()
             except cls.DoesNotExist as exc:
                 LOGGER.error(
-                    'Can not deactivate unexistent ci during import: %s',
-                    exc)
+                    'Can not deactivate unexistent ci during import: %s', exc
+                )
 
 
 class ProductCi(models.Model):
@@ -487,7 +491,7 @@ class ProductCi(models.Model):
     last_changed_at = models.DateTimeField(default=timezone.now)
 
     def __unicode__(self):
-        return self.name if self.name else self.url
+        return self.name
 
     def update_status(self):
         grouped_rules = {}
