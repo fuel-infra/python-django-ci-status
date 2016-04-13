@@ -12,7 +12,6 @@ class RuleAdmin(admin.ModelAdmin):
         'gerrit_refspec',
         'gerrit_branch',
         'ci_system',
-        'version',
         'is_active'
     )
     list_display = (
@@ -22,7 +21,6 @@ class RuleAdmin(admin.ModelAdmin):
         'gerrit_refspec',
         'gerrit_branch',
         'ci_system',
-        'version',
         'last_updated',
         'is_active'
     )

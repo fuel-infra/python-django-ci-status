@@ -25,7 +25,7 @@ LOGGER = logging.getLogger(__name__)
 class CiSystem(models.Model):
 
     url = models.URLField(unique=True)
-    name = models.CharField(max_length=50, default='', unique=True)
+    name = models.CharField(max_length=50, default='', blank=True)
 
     username = models.CharField(max_length=50, blank=True, default='')
     password = models.CharField(max_length=100, blank=True, default='')
@@ -211,7 +211,6 @@ class CiSystem(models.Model):
             try:
                 rule, created = Rule.objects.get_or_create(
                     name=rule_dict['name'],
-                    version=rule_dict['version'],
                     ci_system=ci,
                     rule_type=Rule.type_by_name(
                         rule_dict.get(
@@ -294,8 +293,13 @@ class CiSystem(models.Model):
         new_cis, new_products_names = set(), set()
 
         if seeds:
-            cis = seeds.get('ci_systems', [])
+            cis, products, error = cls._construct_cis_from_import_dict(seeds)
             result['cis_total'] = len(cis)
+            result['ps_total'] = len(products)
+
+            if error:
+                result['errors'].append(error)
+                return result
 
             for ci in cis:
                 new_ci, error = cls._import_ci(ci)
@@ -305,9 +309,6 @@ class CiSystem(models.Model):
                     result['objects'].append(new_ci)
                     result['cis_imported'] += 1
                     new_cis.add(ci['url'])
-
-            products = seeds.get('product_statuses', [])
-            result['ps_total'] = len(products)
 
             for product in products:
                 new_product, error = cls._import_product_status(product)
@@ -327,20 +328,140 @@ class CiSystem(models.Model):
         return result
 
     @classmethod
-    def _import_ci(cls, ci):
-        try:
-            ci_name = ci.get('name', '')
+    def _parse_job(cls, job, name, rule_type='Job'):
+        filters = job.get('filter', {})
+
+        rule = {
+            'name': name,
+            'rule_type': rule_type,
+            'is_active': True
+        }
+
+        rule['trigger_type'] = filters.get(
+            'triggered_by', constants.DEFAULT_TRIGGER_TYPE
+        )
+
+        for gerrit_param, gerrit_value in filters.get(
+            'parameters', {}
+        ).items():
+            rule[gerrit_param.lower()] = gerrit_value
+
+        return rule
+
+    @classmethod
+    def _construct_cis_from_import_dict(cls, seeds_dict):
+        dashboards = seeds_dict.get('dashboards', {})
+        ci_dicts = dashboards.get('ci_systems', [])
+        product_dicts = dashboards.get('products', [])
+        jenkins_list = seeds_dict.get('sources', {}).get('jenkins', [])
+        ci_systems, products = [], {}
+
+        cis_map = {
+            ci['key']: {'name': ci['title']} for ci in ci_dicts
+        }
+
+        for version in product_dicts:
+            try:
+                for section in version['sections']:
+                    products.update({
+                        section['key']: {
+                            'name': section['title'],
+                            'version': version['version'],
+                            'is_active': True,
+                            'rules': [],
+                        }
+                    })
+            except KeyError as exc:
+                msg = (
+                    u'Can not import Product Ci: "%s" from the seeds file. '
+                    u'Required parameter is missed: %s'
+                ) % (section.get('title', ''), exc)
+                LOGGER.error(msg)
+                return jenkins_list, product_dicts, msg
+
+        for jenkins_dict in jenkins_list:
+            try:
+                ci = {
+                    'name': '',
+                    'rules': [],
+                    'is_active': True,
+                    'url': jenkins_dict['url'],
+                    'username': jenkins_dict.get('auth', {}).get(
+                        'username', ''
+                    ),
+                    'password': jenkins_dict.get('auth', {}).get(
+                        'password', ''
+                    ),
+                }
+            except KeyError as exc:
+                msg = (
+                    u'Can not import CI System from the seeds file. '
+                    u'Required parameter is missed: %s'
+                ) % exc
+                LOGGER.error(msg)
+                return jenkins_list, product_dicts, msg
+
+            jobs = jenkins_dict.get('query', {}).get('jobs', [])
+            views = jenkins_dict.get('query', {}).get('views', [])
 
             try:
-                new_ci = cls.objects.get(name=ci_name)
+                for job in jobs:
+                    for name in job['names']:
+                        rule = cls._parse_job(job, name)
+
+                        for key in job['dashboards']:
+                            # ci exist, get the name
+                            if key in cis_map.keys():
+                                ci['name'] = cis_map[key]['name']
+
+                            # rule in product
+                            if key in products.keys():
+                                rule['ci_system_name'] = ci['name']
+                                products[key]['rules'].append(rule)
+                        ci['rules'].append(rule)
+
+                for job in views:
+                    for name in job['names']:
+                        rule = cls._parse_job(job, name, 'View')
+
+                        for key in job['dashboards']:
+                            # ci exist, get the name
+                            if key in cis_map.keys():
+                                ci['name'] = cis_map[key]['name']
+
+                            # rule in product
+                            if key in products.keys():
+                                rule['ci_system_name'] = ci['name']
+                                products[key]['rules'].append(rule)
+                        ci['rules'].append(rule)
+            except KeyError as exc:
+                msg = 'Can not create rule during CI import: %s' % exc
+                LOGGER.error(msg)
+                return jenkins_list, product_dicts, msg
+
+            for rule in ci['rules']:
+                if ci['rules'].count(rule) > 1:
+                    ci['rules'].remove(rule)
+
+            ci_systems.append(ci)
+
+        return ci_systems, products.values(), False
+
+    @classmethod
+    def _import_ci(cls, ci):
+        try:
+            ci_url = ci['url']
+
+            try:
+                new_ci = cls.objects.get(url=ci_url)
             except cls.DoesNotExist:
-                new_ci = cls(name=ci_name)
+                new_ci = cls(url=ci_url)
 
             new_ci.username = ci.get('username', '')
             new_ci.password = ci.get('password', '')
             new_ci.is_active = ci.get('is_active', False)
             new_ci.sticky_failure = ci.get('sticky_failure', False)
-            new_ci.url = ci['url']
+            new_ci.name = ci.get('name', '')
             new_ci.full_clean()
             new_ci.save()
 
@@ -354,30 +475,34 @@ class CiSystem(models.Model):
                 'Can not import CI: "%s" from the seeds file. '
                 'Error(s) occured: %s'
             )
-            LOGGER.error(msg, ci_name, exc)
-            return None, msg % (ci_name, exc)
+            LOGGER.error(msg, ci_url, exc)
+            return None, msg % (ci_url, exc)
         except KeyError as exc:
             msg = (
                 'Can not import CI: "%s" from the seeds file. '
                 'Required parameter is missed: %s'
             )
-            LOGGER.error(msg, ci_name, exc)
-            return None, msg % (ci_name, exc)
+            LOGGER.error(msg, ci_url, exc)
+            return None, msg % (ci_url, exc)
 
         return new_ci, None
 
     @classmethod
     def _import_product_status(cls, product):
         product_name = product.get('name', '')
+        version = product.get('version', '')
 
         try:
             if not product_name:
                 raise KeyError('name')
 
             try:
-                new_product = ProductCi.objects.get(name=product_name)
+                new_product = ProductCi.objects.get(
+                    name=product_name,
+                    version=version
+                )
             except ProductCi.DoesNotExist:
-                new_product = ProductCi(name=product_name)
+                new_product = ProductCi(name=product_name, version=version)
 
             new_product.is_active = product.get('is_active', False)
             new_product.full_clean()
@@ -437,7 +562,6 @@ class CiSystem(models.Model):
                         constants.DEFAULT_RULE_TYPE
                     )
                 ),
-                version=rule_dict['version'],
                 ci_system_id=ci.pk,
                 trigger_type=Rule.trigger_type_by_name(
                     rule_dict.get(
@@ -485,28 +609,29 @@ class ProductCi(models.Model):
     rules = models.ManyToManyField(Rule)
     name = models.CharField(max_length=50, unique=True)
     is_active = models.BooleanField(default=False)
+    version = models.CharField(max_length=255, default='', blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     last_changed_at = models.DateTimeField(default=timezone.now)
 
+    class Meta:
+        unique_together = (
+            'name',
+            'version',
+        )
+
     def __unicode__(self):
         return self.name
 
     def update_status(self):
-        grouped_rules = {}
+        self.set_status(self.rules.filter(is_active=True))
 
-        for rule in self.rules.filter(is_active=True):
-            grouped_rules.setdefault(rule.version, []).append(rule)
-
-        for version, rules in grouped_rules.items():
-            self.set_status(version, rules)
-
-    def set_status(self, version, grouped_rules):
+    def set_status(self, rules):
         previous_status = None
         checks = []
 
-        for rule in grouped_rules:
+        for rule in rules:
             try:
                 check = rule.rulecheck_set.latest()
                 checks.append(check)
@@ -517,8 +642,7 @@ class ProductCi(models.Model):
             status_type = self._get_status_for_checks(checks)
 
             try:
-                previous_status = self.productcistatus_set.filter(
-                    version=version).latest()
+                previous_status = self.productcistatus_set.latest()
             except ProductCiStatus.DoesNotExist:
                 pass
 
@@ -531,17 +655,14 @@ class ProductCi(models.Model):
                 product_ci=self,
                 summary='Assigned automaticaly by a periodic task',
                 status_type=status_type,
-                version=version,
+                version=self.version,
                 last_changed_at=timezone.now()
             )
 
-    def latest_rule_checks(self, version=None):
+    def latest_rule_checks(self):
         checks = []
 
         for rule in self.rules.filter(is_active=True):
-            if version and rule.version != version:
-                continue
-
             try:
                 check = rule.rulecheck_set.latest()
                 checks.append(check)
@@ -588,16 +709,11 @@ class ProductCi(models.Model):
         else:
             return constants.STATUS_SKIP
 
-    def current_status_by_version(self, version=''):
-        if version:
-            try:
-                status = self.productcistatus_set.filter(
-                    version=version).latest()
-                return status.status_type
-            except ProductCiStatus.DoesNotExist:
-                return constants.STATUS_SKIP
-        else:
-            return self.current_status()
+    def current_status_type(self):
+        try:
+            return self.productcistatus_set.latest().status_type
+        except ProductCiStatus.DoesNotExist:
+            return constants.STATUS_SKIP
 
     def current_status_text(self):
         status = self.current_status()

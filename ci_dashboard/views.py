@@ -3,7 +3,7 @@ import logging
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.shortcuts import render, get_object_or_404
 
-from ci_system.models import CiSystem, ProductCi, Rule
+from ci_system.models import CiSystem, ProductCi
 
 
 LOGGER = logging.getLogger(__name__)
@@ -52,17 +52,16 @@ def dashboard(request):
     products_with_versions = []
     number = 1
 
-    for version_name, version_code in _all_versions_with_products():
-        for pci in product_statuses:
-            if pci.latest_rule_checks(version_name):
-                products_with_versions.append((
-                    number,
-                    version_name,
-                    version_code,
-                    pci,
-                    pci.current_status_by_version(version_name)
-                ))
-                number += 1
+    for pci in product_statuses:
+        if pci.latest_rule_checks():
+            products_with_versions.append((
+                number,
+                pci.version,
+                pci.version.replace('.', '_'),
+                pci,
+                pci.current_status_type()
+            ))
+            number += 1
 
     statuses_summaries = [
         ci_system.latest_status()
@@ -80,8 +79,9 @@ def dashboard(request):
 
 def _version_has_product_status(version):
     return any(
-        pci for pci in ProductCi.objects.filter(is_active=True)
-        if pci.rules.filter(is_active=True, version=version)
+        pci for pci in ProductCi.objects.filter(
+            is_active=True, version=version
+        ) if pci.rules.filter(is_active=True)
     )
 
 
@@ -89,6 +89,5 @@ def _all_versions_with_products():
     return sorted(
         (version, version.replace('.', '_'))
         for version
-        in Rule.objects.values_list('version', flat=True).distinct()
-        if version and _version_has_product_status(version)
+        in ProductCi.objects.values_list('version', flat=True).distinct()
     )

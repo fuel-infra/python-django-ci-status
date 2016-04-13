@@ -309,7 +309,7 @@ class RuleTests(TestCase):
 
     def test_created_with_valid_fields(self):
         before = Rule.objects.count()
-        rule = Rule.objects.create(name='kil', ci_system=self.ci, version='7')
+        rule = Rule.objects.create(name='kil', ci_system=self.ci)
 
         rule.full_clean()
         self.assertEqual(Rule.objects.count(), before + 1)
@@ -320,19 +320,19 @@ class RuleTests(TestCase):
         with self.assertRaises(ValidationError):
             rule.full_clean()
 
-    def test_name_must_be_uniq_together_with_type_version_and_ci(self):
+    def test_name_must_be_uniq_together_with_type_and_ci(self):
         first = Rule.objects.create(
             name='first',
             rule_type=1,
             ci_system=self.ci,
-            version='8.0')
+        )
         first.full_clean()
 
         second = Rule(
             name='first',
             rule_type=1,
             ci_system=self.ci,
-            version='8.0')
+        )
         with self.assertRaises(ValidationError):
             second.full_clean()
 
@@ -343,7 +343,7 @@ class RuleTests(TestCase):
         rule = Rule.objects.create(
             name='kilo',
             ci_system=self.ci,
-            version='7.0')
+        )
 
         self.assertEqual(rule.description, '')
         self.assertEqual(rule.rule_type, 1)
@@ -353,7 +353,7 @@ class RuleTests(TestCase):
             name='kilo',
             rule_type=5,
             ci_system=self.ci,
-            version='5.0')
+        )
 
         with self.assertRaises(ValidationError):
             rule.full_clean()
@@ -363,8 +363,7 @@ class RuleTests(TestCase):
             name='kilo',
             rule_type=1,
             ci_system=self.ci,
-            version='7.0',
-            )
+        )
         with mock.patch.object(rule, 'check_job_rule') as m:
             rule.check_rule(self.server)
 
@@ -374,7 +373,7 @@ class RuleTests(TestCase):
             name='kilo',
             rule_type=2,
             ci_system=self.ci,
-            version='7.0')
+        )
         with mock.patch.object(rule, 'check_view_rule') as m:
             rule.check_rule(self.server)
 
@@ -383,8 +382,8 @@ class RuleTests(TestCase):
         rule = Rule(
             name='kilo',
             rule_type=5,
-            ci_system=self.ci,
-            version='7.0')
+            ci_system=self.ci
+        )
         with self.assertRaises(RuleException):
             rule.check_rule(self.server)
 
@@ -443,7 +442,7 @@ class RuleTests(TestCase):
     def test_view_rule(
         self, _get_job_mock, _get_build_mock, _make_request_mock
     ):
-        rule = Rule(name='kilo', rule_type=2, ci_system=self.ci, version='1')
+        rule = Rule(name='kilo', rule_type=2, ci_system=self.ci)
 
         _make_request_mock.return_value = json.dumps(self.ONE_VIEW_JSON_RED)
         _get_job_mock.return_value = self.JOB_INFO_LIST[1]
@@ -472,7 +471,7 @@ class RuleTests(TestCase):
     @mock.patch.object(Jenkins, 'get_job_info')
     @mock.patch.object(Jenkins, 'get_build_info')
     def test_job_rule(self, _get_build_mock, _get_job_mock):
-        rule = Rule(name='kilo', rule_type=1, ci_system=self.ci, version='2')
+        rule = Rule(name='kilo', rule_type=1, ci_system=self.ci)
 
         build_info = self.BUILD_INFO_LIST[0]
         _get_job_mock.return_value = self.JOB_INFO_LIST[1]
@@ -498,10 +497,10 @@ class RuleTests(TestCase):
         )
 
     def test_rule_type_has_text_representation(self):
-        rule = Rule(name='kilo', rule_type=1, ci_system=self.ci, version='1')
+        rule = Rule(name='kilo', rule_type=1, ci_system=self.ci)
         self.assertEqual(rule.rule_type_text(), 'Job')
 
-        rule = Rule(name='kilo', rule_type=2, ci_system=self.ci, version='2')
+        rule = Rule(name='kilo', rule_type=2, ci_system=self.ci)
         self.assertEqual(rule.rule_type_text(), 'View')
 
     @mock.patch.object(Jenkins, 'get_build_info')

@@ -21,7 +21,7 @@
               {% for index, version_name, version_code in versions %}
                 <div class="tab-pane {% if index == 1 %}active{% endif %}" role="tabpanel" id="version-{{ version_code }}">
                   {% for pci in product_cis %}
-                    {% if pci|latest_rule_checks_by_version:version_name %}
+                    {% if pci.latest_rule_checks and pci.version == version_name %}
                       <div class="col-sm-12 col-md-4">
                         {% include "ci_dashboard/product_ci_card.html" with pci=pci %}
                       </div>

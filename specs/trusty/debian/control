@@ -6,7 +6,10 @@ Build-Depends: python-setuptools (>= 0.6b3),
                python-all (>= 2.6.6-3),
                debhelper (>= 7),
                nodejs (>= 0.10.24),
-               git (>= 2.1.4)
+               git (>= 2.1.4),
+# ca-certificates is required for build only as we fetch
+# bower components for ui remotly over https
+               ca-certificates
 # we are using nodejs which already contains npm binary and doesn't require nodejs-legacy package
 #              nodejs-legacy (>=0.10.24),
 #              npm (>= 0.10.24)

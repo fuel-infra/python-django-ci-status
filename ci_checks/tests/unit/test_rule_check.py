@@ -16,7 +16,6 @@ class RuleCheckTests(TestCase):
         self.rule = Rule.objects.create(
             name='kilo',
             rule_type=1,
-            version='7.0',
             ci_system=self.ci)
 
     def test_string_representation(self):
@@ -24,7 +23,7 @@ class RuleCheckTests(TestCase):
 
         self.assertEqual(
             str(rule_check),
-            'Success (ci: "CI", rule: "kilo", version: "7.0")')
+            'Success (ci: "CI", rule: "kilo")')
 
     def test_created_with_valid_fields(self):
         before = RuleCheck.objects.count()
@@ -73,7 +72,7 @@ class RuleCheckTests(TestCase):
             name='kilo',
             rule_type=2,
             ci_system=self.ci,
-            version='7.0')
+        )
         RuleCheck.objects.create(rule=rule)
         before = RuleCheck.objects.count()
 

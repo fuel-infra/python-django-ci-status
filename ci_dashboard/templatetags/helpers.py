@@ -39,16 +39,6 @@ def can_manage_statuses(user):
     ) or user.is_superuser
 
 
-@register.filter(name='current_status_by_version')
-def current_status_by_version(product_ci, version):
-    return product_ci.current_status_by_version(version)
-
-
-@register.filter(name='latest_rule_checks_by_version')
-def latest_rule_checks_by_version(product_ci, version):
-    return product_ci.latest_rule_checks(version)
-
-
 @register.filter('fieldtype')
 def fieldtype(field):
     return field.field.widget.__class__.__name__

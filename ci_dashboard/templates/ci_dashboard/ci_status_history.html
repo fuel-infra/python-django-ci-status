@@ -63,8 +63,8 @@
   <div class="product-info">
     <h3>
      <a href="#">{{ pci.name }}</a>
-     <span class="label label-{{ pci|current_status_by_version:version_tuple.0|status_color }}">
-       {{ pci|current_status_by_version:version_tuple.0|status_text_for_type }}
+     <span class="label label-{{ pci.current_status_type|status_color }}">
+       {{ pci.current_status_type|status_text_for_type }}
      </span>
     </h3>
 
@@ -75,7 +75,7 @@
   <a href="#show-more-{{ pci.pk }}-{{version_tuple.1}}" class="btn btn-default btn-block" role="button" data-toggle="collapse" aria-expanded="false" aria-controls="show-more-{{ pci.pk }}-{{version_tuple.1}}">Click To Show Details</a>
   <div class="collapse" id="show-more-{{ pci.pk }}-{{version_tuple.1}}">
     <ul class="list-group jobs-list">
-      {% for rule_check in pci|latest_rule_checks_by_version:version_tuple.0|sorted_by_rule_name %}
+      {% for rule_check in pci.latest_rule_checks_by_version|sorted_by_rule_name %}
       <li class="list-group-item">
         <a class="job-link" href="{{ rule_check.link_to_ci }}" target="_blank">
           <small>

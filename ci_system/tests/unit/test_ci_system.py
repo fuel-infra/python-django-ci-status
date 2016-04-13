@@ -35,14 +35,6 @@ class CiSystemTests(TestCase):
         ci = CiSystem(url=VALID_URL, name=name)
         self.assertEqual(str(ci), name)
 
-    def test_name_must_be_uniq(self):
-        first = CiSystem.objects.create(url=VALID_URL, name='1')
-        first.full_clean()
-
-        second = CiSystem(url=VALID_URL + 'x', name='1')
-        with self.assertRaises(ValidationError):
-            second.full_clean()
-
     def test_url_must_be_uniq(self):
         first = CiSystem.objects.create(url=VALID_URL, name='1')
         first.full_clean()
@@ -77,22 +69,6 @@ class CiSystemTests(TestCase):
 
         self.assertEqual(list(ci.rule_set.all()), [rule])
 
-    def test_name_is_required_and_uniq(self):
-        ci = CiSystem(url=VALID_URL)
-
-        with self.assertRaises(ValidationError):
-            ci.full_clean()
-
-        CiSystem.objects.create(url=VALID_URL, name='1')
-        ci2 = CiSystem(url=VALID_URL + 'x', name='1')
-
-        with self.assertRaises(ValidationError):
-            ci2.full_clean()
-
-        before = CiSystem.objects.count()
-        ci2 = CiSystem.objects.create(url=VALID_URL + 'x', name='2')
-        self.assertEqual(CiSystem.objects.count() - 1, before)
-
     def test_aware_of_latest_status(self):
         ci = CiSystem.objects.create(url=VALID_URL, name='1')
         ci.status_set.create(summary='Last')
@@ -109,7 +85,6 @@ class CiSystemTests(TestCase):
         job_rule = ci.rule_set.create(
             name='kilo',
             is_active=True,
-            version='7.0'
         )
 
         job_rule_check = RuleCheck(
@@ -130,7 +105,6 @@ class CiSystemTests(TestCase):
         job_rule = ci.rule_set.create(
             name='neutron',
             is_active=True,
-            version='7.0'
         )
 
         job_rule_check = RuleCheck(
@@ -149,7 +123,7 @@ class CiSystemTests(TestCase):
 
     def test_ci_status_checks_only_active_rules(self):
         ci = CiSystem.objects.create(url=VALID_URL)
-        ci.rule_set.create(name='kilo', version='7.0')
+        ci.rule_set.create(name='kilo')
 
         new_status = ci.check_the_status()
         self.assertEqual(new_status.status_type, constants.STATUS_SKIP)
@@ -163,7 +137,7 @@ class CiSystemTests(TestCase):
         self, _check_rule_mock
     ):
         ci = CiSystem.objects.create(url=VALID_URL)
-        ci.rule_set.create(name='kilo', version='7.0', is_active=True)
+        ci.rule_set.create(name='kilo', is_active=True)
 
         _check_rule_mock.side_effect = JenkinsException('server error')
         new_status = ci.check_the_status()
@@ -190,13 +164,11 @@ class CiSystemTests(TestCase):
         job_rule = ci.rule_set.create(
             name='neutron',
             is_active=True,
-            version='7.0'
         )
         view_rule = ci.rule_set.create(
             name='kilo',
             rule_type=2,
             is_active=True,
-            version='7.0'
         )
 
         job_rule_check = RuleCheck(
@@ -226,13 +198,11 @@ class CiSystemTests(TestCase):
         job_rule = ci.rule_set.create(
             name='neutron',
             is_active=True,
-            version='7.0'
         )
         view_rule = ci.rule_set.create(
             name='kilo',
             rule_type=2,
             is_active=True,
-            version='7.0'
         )
 
         job_rule_check = RuleCheck(
@@ -267,7 +237,6 @@ class CiSystemTests(TestCase):
         rule = ci.rule_set.create(
             name='neutron',
             is_active=True,
-            version='7.0'
         )
         rule_check = RuleCheck(
             rule=rule,
@@ -322,7 +291,6 @@ class CiSystemTests(TestCase):
         rule = ci.rule_set.create(
             name='kilo',
             is_active=True,
-            version='7.0'
         )
         rule_check = RuleCheck(
             rule=rule,
@@ -405,7 +373,6 @@ class CiSystemTests(TestCase):
         job_rule = ci.rule_set.create(
             name='kilo',
             is_active=True,
-            version='7.0'
         )
         job_rule_check = RuleCheck(
             rule=job_rule,
@@ -430,7 +397,6 @@ class CiSystemTests(TestCase):
         job_rule = ci.rule_set.create(
             name='neutron',
             is_active=True,
-            version='7.0'
         )
         job_rule_check = RuleCheck(
             rule=job_rule,
@@ -456,7 +422,6 @@ class CiSystemTests(TestCase):
         job_rule = ci.rule_set.create(
             name='neutron2',
             is_active=True,
-            version='7.0'
         )
         job_rule_check = RuleCheck(
             rule=job_rule,
@@ -482,7 +447,6 @@ class CiSystemTests(TestCase):
             rule = ci.rule_set.create(
                 name='kilo_%s' % status_type,
                 is_active=True,
-                version='7.0'
             )
             rule_check = RuleCheck(
                 rule=rule,
@@ -506,7 +470,6 @@ class CiSystemTests(TestCase):
             rule = ci.rule_set.create(
                 name='kilo_%s' % status_type,
                 is_active=True,
-                version='7.0'
             )
             rule_check = RuleCheck(
                 rule=rule,
@@ -527,7 +490,6 @@ class CiSystemTests(TestCase):
             rule = ci.rule_set.create(
                 name='kilo_%s' % status_type,
                 is_active=True,
-                version='7.0'
             )
             rule_check = RuleCheck(
                 rule=rule,
@@ -546,7 +508,6 @@ class CiSystemTests(TestCase):
         rule = ci.rule_set.create(
             name='kilo_%s' % constants.STATUS_SKIP,
             is_active=True,
-            version='7.0'
         )
         rule_check = RuleCheck(
             rule=rule,
@@ -568,7 +529,6 @@ class CiSystemTests(TestCase):
         rule = ci.rule_set.create(
             name='neutron',
             is_active=True,
-            version='7.0'
         )
         _job_mock.return_value = RuleCheck(
             rule=rule,
@@ -606,13 +566,9 @@ class CiSystemTests(TestCase):
 
     def test_could_parse_a_valid_seed_file(self):
         seeds = CiSystem.parse_seeds_file(SEED_FILE_PATH)
-        self.assertEqual(
-            next(
-                (ci['url']
-                 for ci in seeds['ci_systems']
-                 if ci['name'] == 'Product CI:'),
-                None),
-            'https://product-ci.abc.net/')
+        self.assertEqual(len(seeds['dashboards']['ci_systems']), 10)
+        self.assertEqual(len(seeds['dashboards']['products']), 2)
+        self.assertEqual(len(seeds['sources']['jenkins']), 10)
 
     def test_seed_wrong_path_could_not_be_parsed(self):
         self.assertIs(None, CiSystem.parse_seeds_file(SEED_FILE_PATH + 'abc'))
@@ -629,47 +585,50 @@ class CiSystemTests(TestCase):
             url='https://product-ci.abc.net/'
         ).first()
         self.assertEqual(ci.name, 'Product CI:')
-        self.assertEqual(ci.sticky_failure, True)
+        # self.assertEqual(ci.sticky_failure, True)
 
     @mock.patch.object(CiSystem, 'parse_seeds_file')
-    def test_cis_creation_from_file_handles_errors(self, _seed_file_mock):
+    def test_cis_creation_from_file_handles_duplicates(self, _seed_file_mock):
         _seed_file_mock.return_value = {
-            'ci_systems': [{
-                'name': 'Product CI',
-                'url': 'https://product-ci.infra.abc.net/',
-                'is_active': True,
-                'sticky_failure': True,
-                'username': '',
-                'password': '',
-                'rules': [{
-                    'rule_type': 'Job',
-                    'name': '8.0.test_all',
-                    'version': '8.0'
-                }],
-            }, {
-                'name': 'Product CI2',
-                'url': 'https://product-ci.infra.abc.net/',
-                'is_active': True,
-                'sticky_failure': True,
-                'username': '',
-                'password': '',
-                'rules': [{
-                    'rule_type': 'job',
-                    'name': '8.0.test_all',
-                    'version': '8.0'
-                }],
-            }]
+            'dashboards': {
+                'ci_systems': [{
+                    'key': 'prodci',
+                    'title': 'Product CI:'
+                }, {
+                    'key': 'prodci2',
+                    'title': 'Product CI2'
+                }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'url': 'https://product-ci.infra.abc.net/',
+                    'query': {
+                        'jobs': [{
+                            'names': ['8.0.test_all'],
+                            'dashboards': ['prodci'],
+                        }]
+                    }
+                }, {
+                    'url': 'https://product-ci.infra.abc.net/',
+                    'query': {
+                        'jobs': [{
+                            'names': ['9.0.test_all'],
+                            'dashboards': ['prodci2'],
+                        }]
+                    }
+                }]
+            }
         }
 
         before = CiSystem.objects.count()
         result = CiSystem.create_from_seed_file(SEED_FILE_PATH)
 
         self.assertEqual(CiSystem.objects.count(), before + 1)
-        self.assertEqual(1, result['cis_imported'])
-        self.assertTrue(
-            result['errors'][0].find(
-                'Ci system with this Url already exists.'
-            ) != -1
+        self.assertEqual(2, result['cis_imported'])
+        self.assertEqual(
+            CiSystem.objects.first().rule_set.filter(
+                is_active=True).first().name,
+            '9.0.test_all'
         )
 
     def test_could_create_rules_by_attributes_list(self):
@@ -677,20 +636,20 @@ class CiSystemTests(TestCase):
         rule = Rule.objects.create(
             name='test_job',
             ci_system=ci,
-            is_active=True,
-            version='7.0')
+            is_active=True
+        )
 
         result1 = CiSystem.create_rule_for_ci(
-            [{'name': 'test_job', 'rule_type': 'job', 'version': '7.0'}], ci
+            [{'name': 'test_job', 'rule_type': 'job'}], ci
         )
         self.assertEqual(result1[0][0].name, rule.name)
         self.assertIsNone(result1[1])
 
         result2 = CiSystem.create_rule_for_ci(
             [{
-                'name': 'test_job2', 'rule_type': 'View', 'version': '7.0'
+                'name': 'test_job2', 'rule_type': 'View'
             }, {
-                'name': 'test_job3', 'rule_type': 'Job', 'version': '7.0'
+                'name': 'test_job3', 'rule_type': 'Job'
             }],
             ci
         )
@@ -700,9 +659,9 @@ class CiSystemTests(TestCase):
 
         result3 = CiSystem.create_rule_for_ci(
             [{
-                'name': 'test_job4', 'rule_type': 'View', 'version': '7.0'
+                'name': 'test_job4', 'rule_type': 'View'
             }, {
-                'name': 'test_job5', 'rule_type': 'Invalid', 'version': '7.0'
+                'name': 'test_job5', 'rule_type': 'Invalid'
             }],
             ci
         )
@@ -712,23 +671,27 @@ class CiSystemTests(TestCase):
     @mock.patch.object(CiSystem, 'parse_seeds_file')
     def test_cis_creation_with_rules_assigned(self, _seed_file_mock):
         _seed_file_mock.return_value = {
-            'ci_systems': [{
-                'name': 'Product CI',
-                'url': 'https://product-ci.infra.abc.net/',
-                'is_active': True,
-                'sticky_failure': True,
-                'username': '',
-                'password': '',
-                'rules': [{
-                    'rule_type': 'Job',
-                    'name': '8.0.test_all',
-                    'version': '7.0',
-                    'trigger_type': 'Gerrit trigger',
-                    'is_active': True,
-                }],
-            }]
+            'dashboards': {
+                'ci_systems': [{
+                    'key': 'prodci',
+                    'title': 'Product CI:'
+                }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'url': 'https://product-ci.infra.abc.net/',
+                    'query': {
+                        'jobs': [{
+                            'names': ['8.0.test_all'],
+                            'dashboards': ['prodci'],
+                            'filter': {
+                                'triggered_by': 'Gerrit trigger',
+                            }
+                        }]
+                    }
+                }]
+            }
         }
-
         result = CiSystem.create_from_seed_file(SEED_FILE_PATH)
 
         self.assertEqual(result['cis_imported'], 1)
@@ -755,7 +718,6 @@ class CiSystemTests(TestCase):
         for name in '123':
             Rule.objects.create(
                 name=name,
-                version=name,
                 ci_system=ci,
                 is_active=True,
             )
@@ -776,7 +738,7 @@ class CiSystemTests(TestCase):
         with open(SEED_FILE_PATH) as f:
             seeds = CiSystem.parse_seeds_from_stream(f.read())
             self.assertIsInstance(seeds, dict)
-            self.assertTrue('ci_systems' in seeds)
+            self.assertTrue('dashboards' in seeds)
 
     def test_find_rules_for_product(self):
         cis_names = '123'
@@ -789,17 +751,14 @@ class CiSystemTests(TestCase):
             Rule.objects.create(
                 name='rule_' + name,
                 ci_system=ci,
-                version=name,
                 is_active=True,
             )
 
         rules, error = CiSystem.find_rules_for_product([{
             'name': 'rule_1',
-            'version': '1',
             'ci_system_name': '1',
         }, {
             'name': 'rule_3',
-            'version': '3',
             'ci_system_name': 'unknown',
         }])
 
@@ -808,11 +767,9 @@ class CiSystemTests(TestCase):
 
         rules, error = CiSystem.find_rules_for_product([{
             'name': 'rule_1',
-            'version': '1',
             'ci_system_name': '1',
         }, {
             'name': 'rule_10',
-            'version': '2',
             'ci_system_name': '2',
         }])
 
@@ -821,27 +778,12 @@ class CiSystemTests(TestCase):
 
         rules, error = CiSystem.find_rules_for_product([{
             'name': 'rule_1',
-            'version': '1',
             'ci_system_name': '1',
         }, {
             'name': 'rule_2',
-            'ci_system_name': '2',
-        }])
-
-        self.assertTrue(error)
-        self.assertEqual(rules, [])  # error because of missed rule properties
-
-        rules, error = CiSystem.find_rules_for_product([{
-            'name': 'rule_1',
-            'version': '1',
-            'ci_system_name': '1',
-        }, {
-            'name': 'rule_2',
-            'version': '2',
             'ci_system_name': '2',
         }, {
             'name': 'rule_3',
-            'version': '3',
             'ci_system_name': '3',
         }])
 
@@ -859,22 +801,18 @@ class CiSystemTests(TestCase):
             Rule.objects.create(
                 name='rule_' + name,
                 ci_system=ci,
-                version=name,
                 is_active=True,
             )
 
         before = Rule.objects.count()
         rules, error = CiSystem.create_rule_for_ci([{
             'name': 'rule_1',
-            'version': '1',
             'ci_system_name': 'ci',
         }, {
             'name': 'rule_2',
-            'version': '2',
             'ci_system_name': 'ci',
         }, {
             'name': 'rule_3',
-            'version': '3',
             'ci_system_name': 'ci',
         }], ci)
 
@@ -893,22 +831,18 @@ class CiSystemTests(TestCase):
             Rule.objects.create(
                 name='rule_' + name,
                 ci_system=ci,
-                version=name,
                 is_active=True,
             )
 
         before = Rule.objects.count()
         rules, error = CiSystem.create_rule_for_ci([{
             'name': 'rule_1',
-            'version': '1',
             'ci_system_name': 'ci',
         }, {
             'name': 'rule_2',
-            'version': '2',
             'ci_system_name': 'ci',
         }, {
             'name': 'rule_3',
-            'version': '3',
             'ci_system_name': 'ci',
         }], ci)
 
@@ -927,32 +861,14 @@ class CiSystemTests(TestCase):
             Rule.objects.create(
                 name='rule_' + name,
                 ci_system=ci,
-                version=name,
                 is_active=True,
             )
 
         before = Rule.objects.count()
         rules, error = CiSystem.create_rule_for_ci([{
-            'name': 'rule_1',
-            'version': '1',
-            'ci_system_name': 'ci',
-        }, {
-            'name': 'rule_2',
-            'ci_system_name': 'ci',
-        }], ci)
-
-        self.assertTrue(error)
-        self.assertEqual(len(rules), 0)
-        self.assertEqual(Rule.objects.count(), before)
-
-        before = Rule.objects.count()
-        rules, error = CiSystem.create_rule_for_ci([{
             'version': '2',
-            'ci_system_name': 'ci',
         }, {
             'name': 'rule_1',
-            'version': '1',
-            'ci_system_name': 'ci',
         }], ci)
 
         self.assertTrue(error)
@@ -962,12 +878,8 @@ class CiSystemTests(TestCase):
         before = Rule.objects.count()
         rules, error = CiSystem.create_rule_for_ci([{
             'name': 'rule_1',
-            'version': '1',
-            'ci_system_name': 'ci',
         }, {
             'name': 'rule_3',
-            'version': '1',
-            'ci_system_name': 'ci',
             'rule_type': 'unknown',
         }], ci)
 
@@ -986,7 +898,6 @@ class CiSystemTests(TestCase):
             Rule.objects.create(
                 name='rule_' + name,
                 ci_system=ci,
-                version=name,
                 is_active=True,
             )
 
@@ -1034,18 +945,158 @@ class CiSystemTests(TestCase):
             }
         )
 
+    def test_create_from_seeds_with_valid_unexistent_cis_with_one_rule(self):
+        before = CiSystem.objects.count()
+        seeds = {
+            'dashboards': {
+                'ci_systems': [{
+                    'key': 'prodci',
+                    'title': 'Product CI:'
+                }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'query': {
+                        'jobs': [{
+                            'names': ['8.0.test_all'],
+                            'dashboards': ['prodci']
+                        }]
+                    },
+                    'url': 'https://product-ci.abc.net/'
+                }]
+            }
+        }
+
+        self.assertEqual(
+            CiSystem.create_from_seeds(seeds),
+            {
+                'objects': [CiSystem.objects.first()],
+                'errors': [],
+                'cis_total': 1,
+                'cis_imported': 1,
+                'ps_total': 0,
+                'ps_imported': 0,
+            }
+        )
+        self.assertEqual(CiSystem.objects.count(), before + 1)
+
+    def test_create_from_seeds_import_rule_correctly(self):
+        before = CiSystem.objects.count()
+        seeds = {
+            'dashboards': {
+                'ci_systems': [{
+                    'key': 'prodci',
+                    'title': 'Product CI:'
+                }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'url': 'https://product-ci.abc.net/',
+                    'query': {
+                        'jobs': [{
+                            'names': ['8.0.test_all'],
+                            'dashboards': ['prodci'],
+                            'filter': {
+                                'triggered_by': 'Gerrit trigger',
+                                'parameters': {
+                                    'GERRIT_REFSPEC': 'origin/master',
+                                    'GERRIT_BRANCH': 'master'
+                                }
+                            }
+                        }]
+                    }
+                }]
+            }
+        }
+
+        self.assertEqual(
+            CiSystem.create_from_seeds(seeds),
+            {
+                'objects': [CiSystem.objects.first()],
+                'errors': [],
+                'cis_total': 1,
+                'cis_imported': 1,
+                'ps_total': 0,
+                'ps_imported': 0,
+            }
+        )
+        self.assertEqual(CiSystem.objects.count(), before + 1)
+
+        rule = Rule.objects.first()
+        self.assertEqual(rule.name, '8.0.test_all')
+        self.assertEqual(rule.trigger_type, 2)
+        self.assertEqual(rule.gerrit_refspec, 'origin/master')
+        self.assertEqual(rule.gerrit_branch, 'master')
+        self.assertEqual(rule.ci_system, CiSystem.objects.first())
+
+    def test_create_from_seeds_import_multiple_complex_rules(self):
+        before = Rule.objects.count()
+        seeds = {
+            'dashboards': {
+                'ci_systems': [{
+                    'key': 'prodci',
+                    'title': 'Product CI:'
+                }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'url': 'https://product-ci.abc.net/',
+                    'query': {
+                        'jobs': [{
+                            'names': ['8.0.test_all', '9.0.test_one'],
+                            'dashboards': ['prodci'],
+                            'filter': {
+                                'triggered_by': 'Gerrit trigger',
+                                'parameters': {
+                                    'GERRIT_REFSPEC': 'origin/master',
+                                    'GERRIT_BRANCH': 'master'
+                                }
+                            }
+                        }, {
+                            'names': ['acceptance_test'],
+                            'dashboards': ['prodci'],
+                            'filter': {
+                                'triggered_by': 'Manual',
+                                'parameters': {
+                                    'GERRIT_REFSPEC': 'origin/trunk',
+                                    'GERRIT_BRANCH': 'trunk'
+                                }
+                            }
+                        }]
+                    }
+                }]
+            }
+        }
+        CiSystem.create_from_seeds(seeds)
+
+        self.assertEqual(Rule.objects.count(), before + 3)
+
+        rule1 = Rule.objects.get(name='8.0.test_all')
+        self.assertEqual(rule1.trigger_type, 2)
+        self.assertEqual(rule1.gerrit_refspec, 'origin/master')
+        self.assertEqual(rule1.gerrit_branch, 'master')
+        self.assertEqual(rule1.ci_system, CiSystem.objects.first())
+
+        rule2 = Rule.objects.get(name='9.0.test_one')
+        self.assertEqual(rule2.trigger_type, 2)
+        self.assertEqual(rule2.gerrit_refspec, 'origin/master')
+        self.assertEqual(rule2.gerrit_branch, 'master')
+        self.assertEqual(rule2.ci_system, CiSystem.objects.first())
+
+        rule3 = Rule.objects.get(name='acceptance_test')
+        self.assertEqual(rule3.trigger_type, 4)
+        self.assertEqual(rule3.gerrit_refspec, 'origin/trunk')
+        self.assertEqual(rule3.gerrit_branch, 'trunk')
+        self.assertEqual(rule3.ci_system, CiSystem.objects.first())
+
     def test_create_from_seeds_with_valid_unexistent_cis_without_rules(self):
         before = CiSystem.objects.count()
-
         seeds = {
-            'ci_systems': [{
-                'name': 'Product CI',
-                'url': 'https://product-ci.infra.abc.net/',
-                'is_active': True,
-                'sticky_failure': True,
-                'username': '',
-                'password': '',
-            }]
+            'sources': {
+                'jenkins': [{
+                    'url': 'https://product-ci.abc.net/'
+                }]
+            }
         }
         self.assertEqual(
             CiSystem.create_from_seeds(seeds),
@@ -1061,11 +1112,13 @@ class CiSystemTests(TestCase):
         self.assertEqual(CiSystem.objects.count(), before + 1)
 
         seeds = {
-            'ci_systems': [{
-                'name': 'Product CI2',
-                'url': 'https://product-ci2.infra.abc.net/',
-            }]
+            'sources': {
+                'jenkins': [{
+                    'url': 'https://infra-ci.abc.net/'
+                }]
+            }
         }
+
         self.assertEqual(
             CiSystem.create_from_seeds(seeds),
             {
@@ -1077,32 +1130,8 @@ class CiSystemTests(TestCase):
                 'ps_imported': 0,
             }
         )
+
         self.assertEqual(CiSystem.objects.count(), before + 2)
-
-    def test_create_from_seeds_with_invalid_cis_without_rules(self):
-        missed_msg = (
-            u'Can not import CI: "%s" from the seeds file. '
-            u'Required parameter is missed: u\'%s\''
-        )
-        before = CiSystem.objects.count()
-
-        seeds = {
-            'ci_systems': [{
-                'name': 'Product CI',
-            }]
-        }
-        self.assertEqual(
-            CiSystem.create_from_seeds(seeds),
-            {
-                'objects': [],
-                'errors': [missed_msg % ('Product CI', 'url')],
-                'cis_total': 1,
-                'cis_imported': 0,
-                'ps_total': 0,
-                'ps_imported': 0,
-            }
-        )
-        self.assertEqual(CiSystem.objects.count(), before)
 
     def test_create_from_seeds_with_valid_existent_cis_without_rules(self):
         CiSystem.objects.create(
@@ -1112,15 +1141,16 @@ class CiSystemTests(TestCase):
         before = CiSystem.objects.count()
 
         seeds = {
-            'ci_systems': [{
-                'name': 'Product CI',
-                'url': 'https://product-ci.infra.abc.net/',
-            }, {
-                'name': 'Status CI',
-                'url': 'https://status-ci.infra.abc.net/',
-            }]
+            'sources': {
+                'jenkins': [{
+                    'url': 'https://product-ci.infra.abc.net/'
+                }, {
+                    'url': 'https://status-ci.infra.abc.net/'
+                }]
+            }
         }
         result = CiSystem.create_from_seeds(seeds)
+
         self.assertEqual(len(result['objects']), 2)
         self.assertEqual(result['cis_total'], 2)
         self.assertEqual(result['cis_imported'], 2)
@@ -1154,21 +1184,23 @@ class CiSystemTests(TestCase):
         before = CiSystem.objects.count()
 
         seeds = {
-            'ci_systems': [{
-                'name': 'Product CI2',
-                'url': 'https://product-ci.infra.abc.net/',
-            }]
-        }
-        result = CiSystem.create_from_seeds(seeds)
-        self.assertEqual(result['cis_total'], 1)
-        self.assertEqual(result['cis_imported'], 0)
-        self.assertTrue('Url already exist' in ''.join(result['errors']))
-
-        seeds = {
-            'ci_systems': [{
-                'name': 'Product CI3',
-                'url': 'https://',
-            }]
+            'dashboards': {
+                'ci_systems': [{
+                    'key': 'prodci',
+                    'title': 'Product CI:'
+                }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'url': 'https://',  # invalid url
+                    'query': {
+                        'jobs': [{
+                            'names': ['acceptance_test'],
+                            'dashboards': ['prodci'],
+                        }]
+                    }
+                }]
+            }
         }
         result = CiSystem.create_from_seeds(seeds)
         self.assertEqual(result['cis_total'], 1)
@@ -1177,63 +1209,24 @@ class CiSystemTests(TestCase):
 
         self.assertEqual(CiSystem.objects.count(), before)
 
-    def test_create_from_seeds_cis_errors_doesnt_affect_valid_records(self):
-        before = CiSystem.objects.count()
-
-        seeds = {
-            'ci_systems': [{
-                'name': 'Product CI',
-                'url': 'https://product-ci.infra.abc.net/',
-            }, {
-                'url': 'https://product-ci.infra.abc.net/',
-            }]
-        }
-
-        result = CiSystem.create_from_seeds(seeds)
-        self.assertEqual(len(result['objects']), 1)
-        self.assertEqual(result['cis_total'], 2)
-        self.assertEqual(result['cis_imported'], 1)
-        self.assertTrue('Url already exist' in ''.join(result['errors']))
-        self.assertEqual(CiSystem.objects.count(), before + 1)
-
-    def test_create_from_seeds_cis_with_valid_rules(self):
-        seeds = {
-            'ci_systems': [{
-                'name': 'Product CI',
-                'url': 'https://product-ci.infra.abc.net/',
-                'rules': [{
-                    'rule_type': 'Job',
-                    'name': '8.0.test_all',
-                    'version': '7.0',
-                    'trigger_type': 'Gerrit trigger',
-                    'is_active': True,
-                }, {
-                    'rule_type': 'View',
-                    'name': '8.0.test_all',
-                    'version': '7.0',
-                    'trigger_type': 'Gerrit trigger',
-                    'is_active': False,
-                }],
-            }]
-        }
-
-        result = CiSystem.create_from_seeds(seeds)
-        self.assertEqual(len(result['objects']), 1)
-        self.assertEqual(result['cis_total'], 1)
-        self.assertEqual(result['cis_imported'], 1)
-        self.assertEqual(CiSystem.objects.first().rule_set.count(), 2)
-
     def test_create_from_seeds_cis_with_invalid_rules(self):
         seeds = {
-            'ci_systems': [{
-                'name': 'Product CI',
-                'url': 'https://product-ci.infra.abc.net/',
-                'rules': [{
-                    'version': '7.0',
-                    'trigger_type': 'Gerrit trigger',
-                    'is_active': True,
-                }],
-            }]
+            'dashboards': {
+                'ci_systems': [{
+                    'key': 'prodci',
+                    'title': 'Product CI'
+                }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'url': 'https://product-ci.infra.abc.net/',
+                    'query': {
+                        'jobs': [{
+                            'names': ['7.test_all']
+                        }]
+                    }
+                }]
+            }
         }
 
         result = CiSystem.create_from_seeds(seeds)
@@ -1252,55 +1245,53 @@ class CiSystemTests(TestCase):
             password='b',
         )
         seeds = {
-            'ci_systems': [{
-                'name': 'Product CI',
-                'url': 'https://product-ci.infra.abc.net/',
-                'is_active': True,
-                'username': 'user',
-                'password': 'pass',
-                'sticky_failure': True,
-                'rules': [{
-                    'name': '7.test_all',
-                    'version': '7.0',
-                    'trigger_type': 'Gerrit trigger',
-                    'is_active': True,
-                }],
-            }]
+            'dashboards': {
+                'ci_systems': [{
+                    'key': 'prodci',
+                    'title': 'Product CI'
+                }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'url': 'https://product.abc.net/',
+                    'auth': {
+                        'username': 'user',
+                        'password': 'pass'
+                    },
+                    'query': {
+                        'jobs': [{
+                            'names': ['7.test_all'],
+                            'dashboards': ['prodci'],
+                            'filter': {
+                                'triggered_by': 'Gerrit trigger',
+                            }
+                        }]
+                    }
+                }]
+            }
         }
-
         CiSystem.create_from_seeds(seeds)
         ci = CiSystem.objects.first()
 
-        self.assertEqual(ci.url, 'https://product-ci.infra.abc.net/')
-        self.assertTrue(ci.is_active, True)
-        self.assertTrue(ci.sticky_failure, True)
         self.assertTrue(ci.username, 'user')
         self.assertTrue(ci.password, 'pass')
         self.assertEqual(ci.rule_set.filter(is_active=True).count(), 1)
-
-        seeds = {
-            'ci_systems': [{
-                'name': 'Product CI',
-                'url': 'https://product-ci.infra.abc.net/',
-                'is_active': True,
-                'username': 'user',
-                'password': 'pass',
-                'sticky_failure': True,
-                'rules': [],
-            }]
-        }
-        CiSystem.create_from_seeds(seeds)
-        self.assertEqual(ci.rule_set.filter(is_active=True).count(), 0)
 
     def test_create_from_seeds_with_valid_unexistent_psis_without_rules(self):
         before = ProductCi.objects.count()
 
         seeds = {
-            'product_statuses': [{
-                'name': 'Product CI',
-                'is_active': True,
-            }]
+            'dashboards': {
+                'products': [{
+                    'version': 7.0,
+                    'sections': [{
+                        'title': 7.0,
+                        'key': 'ps7'
+                    }]
+                }]
+            }
         }
+
         self.assertEqual(
             CiSystem.create_from_seeds(seeds),
             {
@@ -1316,21 +1307,27 @@ class CiSystemTests(TestCase):
 
     def test_create_from_seeds_with_invalid_psis_without_rules(self):
         missed_msg = (
-            u'Can not import ProductCi: "%s" from the seeds file. '
+            u'Can not import Product Ci: "%s" from the seeds file. '
             u'Required parameter is missed: u\'%s\''
         )
         before = ProductCi.objects.count()
 
         seeds = {
-            'product_statuses': [{
-                'is_active': True,
-            }]
+            'dashboards': {
+                'products': [{
+                    'version': 7.0,
+                    'sections': [{
+                        'key': 'ps7'
+                    }]
+                }]
+            }
         }
+
         self.assertEqual(
             CiSystem.create_from_seeds(seeds),
             {
                 'objects': [],
-                'errors': [missed_msg % ('', 'name')],
+                'errors': [missed_msg % ('', 'title')],
                 'cis_total': 0,
                 'cis_imported': 0,
                 'ps_total': 1,
@@ -1340,14 +1337,20 @@ class CiSystemTests(TestCase):
         self.assertEqual(ProductCi.objects.count(), before)
 
     def test_create_from_seeds_with_valid_existent_psis_without_rules(self):
-        ProductCi.objects.create(name='Product CI')
+        ProductCi.objects.create(name='Product CI', version='7.0')
 
         seeds = {
-            'product_statuses': [{
-                'name': 'Product CI',
-                'is_active': True,
-            }]
+            'dashboards': {
+                'products': [{
+                    'version': 7.0,
+                    'sections': [{
+                        'title': 'Product CI',
+                        'key': 'ps7'
+                    }]
+                }]
+            }
         }
+
         result = CiSystem.create_from_seeds(seeds)
         self.assertEqual(len(result['objects']), 1)
         self.assertEqual(result['ps_total'], 1)
@@ -1359,22 +1362,37 @@ class CiSystemTests(TestCase):
         ProductCi.objects.create(name='Product CI', is_active=True)
 
         seeds = {
-            'product_statuses': [{
-                'name': 'Product CI2',
-            }]
+            'dashboards': {
+                'products': [{
+                    'version': 7.0,
+                    'sections': [{
+                        'title': 'Product CI2',
+                        'key': 'ps7'
+                    }]
+                }]
+            }
         }
 
         CiSystem.create_from_seeds(seeds)
-        self.assertEqual(ProductCi.objects.filter(is_active=True).count(), 0)
+        active_prods = ProductCi.objects.filter(is_active=True)
+        self.assertEqual(active_prods.count(), 1)
+        self.assertEqual(active_prods.first().name, 'Product CI2')
 
     def test_create_from_seeds_psis_handles_errors(self):
         ProductCi.objects.create(name='Product CI')
 
         seeds = {
-            'product_statuses': [{
-                'name': '*' * 200,  # just simulating validation error here
-            }]
+            'dashboards': {
+                'products': [{
+                    'version': 7.0,
+                    'sections': [{
+                        'title': '*' * 200,
+                        'key': 'ps7'
+                    }]
+                }]
+            }
         }
+
         result = CiSystem.create_from_seeds(seeds)
         self.assertEqual(len(result['objects']), 0)
         self.assertEqual(result['ps_total'], 1)
@@ -1382,182 +1400,201 @@ class CiSystemTests(TestCase):
         self.assertTrue('Ensure this value' in ''.join(result['errors']))
         self.assertEqual(ProductCi.objects.count(), 1)
 
-    def test_create_from_seeds_psis_errors_doesnt_affect_valid_records(self):
+    def test_create_from_seeds_psis_with_valid_rule(self):
         seeds = {
-            'product_statuses': [{
-                'name': 'Product CI',
-                'is_active': True,
-            }, {
-                'is_active': False
-            }]
+            'dashboards': {
+                'products': [{
+                    'version': 7.0,
+                    'sections': [{
+                        'title': 7.0,
+                        'key': 'ps7'
+                    }]
+                }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'query': {
+                        'jobs': [{
+                            'names': ['8.0.test_all'],
+                            'dashboards': ['ps7']
+                        }]
+                    },
+                    'url': 'https://product-ci.abc.net/'
+                }]
+            }
         }
 
         result = CiSystem.create_from_seeds(seeds)
-        self.assertEqual(len(result['objects']), 1)
-        self.assertEqual(result['ps_total'], 2)
+
         self.assertEqual(result['ps_imported'], 1)
-        self.assertTrue('parameter is missed' in ''.join(result['errors']))
-        self.assertEqual(ProductCi.objects.count(), 1)
+        self.assertEqual(ProductCi.objects.first().rules.count(), 1)
+        self.assertEqual(Rule.objects.count(), 1)
 
-    def test_create_from_seeds_psis_with_valid_rules(self):
-        ci = CiSystem.objects.create(name='Fuel')
-        ci.rule_set.create(
-            name='8.0.test_all',
-            version='7.0',
-            trigger_type=2,
-            is_active=True,
-        )
-        ci.rule_set.create(
-            name='8.0.test_all',
-            version='7.0',
-            rule_type=2,
-            trigger_type=2,
-            is_active=False,
-        )
+        rule = Rule.objects.first()
+        self.assertEqual(rule.name, '8.0.test_all')
 
+    def test_create_from_seeds_psis_with_valid_multiple_rules(self):
         seeds = {
-            'product_statuses': [{
-                'name': 'Product CI',
-                'rules': [{
-                    'rule_type': 'Job',
-                    'name': '8.0.test_all',
-                    'version': '7.0',
-                    'trigger_type': 'Gerrit trigger',
-                    'is_active': True,
-                    'ci_system_name': 'Fuel',
-                }, {
-                    'rule_type': 'View',
-                    'name': '8.0.test_all',
-                    'version': '7.0',
-                    'trigger_type': 'Gerrit trigger',
-                    'is_active': False,
-                    'ci_system_name': 'Fuel',
-                }],
-            }]
+            'dashboards': {
+                'products': [{
+                    'version': 7.0,
+                    'sections': [{
+                        'title': 7.0,
+                        'key': 'ps7'
+                    }]
+                }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'query': {
+                        'jobs': [{
+                            'names': ['8.0.test_all', '9.0.test_all'],
+                            'dashboards': ['ps7']
+                        }, {
+                            'names': ['syntax_check'],
+                            'dashboards': ['ps7']
+                        }]
+                    },
+                    'url': 'https://product-ci.abc.net/'
+                }]
+            }
         }
-
         result = CiSystem.create_from_seeds(seeds)
-        self.assertEqual(len(result['objects']), 1)
-        self.assertEqual(result['ps_total'], 1)
+
         self.assertEqual(result['ps_imported'], 1)
-        self.assertEqual(ProductCi.objects.first().rules.count(), 2)
+        self.assertEqual(ProductCi.objects.first().rules.count(), 3)
+        self.assertEqual(Rule.objects.count(), 3)
 
     def test_create_from_seeds_psis_with_invalid_rules(self):
-        ci = CiSystem.objects.create(name='Fuel')
-        ci.rule_set.create(
-            name='8.0.test_all',
-            version='7.0',
-            trigger_type=2,
-            is_active=True,
-        )
-
         seeds = {
-            'product_statuses': [{
-                'name': 'Product CI',
-                'rules': [{  # missed name
-                    'version': '7.0',
-                    'trigger_type': 'Gerrit trigger',
-                    'is_active': True,
-                    'ci_system_name': 'Fuel',
-                }],
-            }]
+            'dashboards': {
+                'products': [{
+                    'version': 7.0,
+                    'sections': [{
+                        'title': 7.0,
+                        'key': 'ps7'
+                    }]
+                }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'query': {
+                        'jobs': [{
+                            'names': ['8.0.test_all'],
+                        }, {
+                            'names': ['syntax_check'],
+                            'dashboards': []
+                        }]
+                    },
+                    'url': 'https://product-ci.abc.net/'
+                }]
+            }
         }
 
         result = CiSystem.create_from_seeds(seeds)
         self.assertEqual(len(result['objects']), 0)
         self.assertEqual(result['ps_total'], 1)
         self.assertEqual(result['ps_imported'], 0)
-        self.assertTrue('has invalid rules' in ''.join(result['errors']))
-
-        seeds = {
-            'product_statuses': [{
-                'name': 'Product CI',
-                'rules': [{
-                    'name': 'unexistent',  # unexistent rule
-                    'version': '7.0',
-                    'trigger_type': 'Gerrit trigger',
-                    'is_active': True,
-                    'ci_system_name': 'Fuel',
-                }],
-            }]
-        }
-
-        result = CiSystem.create_from_seeds(seeds)
-        self.assertEqual(len(result['objects']), 0)
-        self.assertEqual(result['ps_total'], 1)
-        self.assertEqual(result['ps_imported'], 0)
-        self.assertTrue('has invalid rules' in ''.join(result['errors']))
+        self.assertTrue('not create rule' in ''.join(result['errors']))
 
     def test_create_from_seeds_psis_updates_existent_psis_rules(self):
+        # create a ProductCi with one rule
         ci = CiSystem.objects.create(name='Fuel')
         ci.rule_set.create(
             name='7',
-            version='7.0',
             is_active=True,
         )
         ci.rule_set.create(
             name='8',
-            version='8.0',
             trigger_type=2,
             rule_type=2,
             is_active=True,
         )
 
-        previous = ProductCi.objects.create(name='Product CI')
+        previous = ProductCi.objects.create(name='Product CI', version='7.0')
         previous.rules.add(Rule.objects.first())
         self.assertEqual(previous.rules.count(), 1)
 
+        # import same ProductCi with another rule
         seeds = {
-            'product_statuses': [{
-                'name': 'Product CI',
-                'is_active': True,
-                'rules': [{
-                    'name': '7',
-                    'rule_type': 'Job',
-                    'version': '7.0',
-                    'ci_system_name': 'Fuel',
-                }, {
-                    'name': '8',
-                    'rule_type': 'View',
-                    'version': '8.0',
-                    'trigger_type': 'Gerrit trigger',
-                    'is_active': True,
-                    'ci_system_name': 'Fuel',
-                }],
-            }]
+            'dashboards': {
+                'products': [{
+                    'version': 7.0,
+                    'sections': [{
+                        'title': 'Product CI',
+                        'key': 'ps7'
+                    }]
+                }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'query': {
+                        'jobs': [{
+                            'names': ['8.0.test_all'],
+                            'dashboards': ['ps7'],
+                        }]
+                    },
+                    'url': 'https://product-ci.abc.net/'
+                }]
+            }
         }
-
         CiSystem.create_from_seeds(seeds)
+
+        self.assertEqual(ProductCi.objects.count(), 1)
         product = ProductCi.objects.first()
 
-        self.assertTrue(product.is_active)
+        self.assertEqual(product.rules.count(), 1)
+        self.assertEqual(product.rules.first().name, '8.0.test_all')
+
+        seeds = {
+            'dashboards': {
+                'products': [{
+                    'version': 7.0,
+                    'sections': [{
+                        'title': 'Product CI',
+                        'key': 'ps7'
+                    }]
+                }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'query': {
+                        'jobs': [{
+                            'names': ['8.0.test_all', 'test'],
+                            'dashboards': ['ps7'],
+                        }]
+                    },
+                    'url': 'https://product-ci.abc.net/'
+                }]
+            }
+        }
+        CiSystem.create_from_seeds(seeds)
+
+        self.assertEqual(ProductCi.objects.count(), 1)
         self.assertEqual(product.rules.count(), 2)
 
         seeds = {
-            'product_statuses': [{
-                'name': 'Product CI',
-                'is_active': True,
-                'rules': [{
-                    'rule_type': 'View',
-                    'name': '8',
-                    'version': '8.0',
-                    'trigger_type': 'Gerrit trigger',
-                    'is_active': True,
-                    'ci_system_name': 'Fuel',
-                }],
-            }]
+            'dashboards': {
+                'products': [{
+                    'version': 7.0,
+                    'sections': [{
+                        'title': 'Product CI',
+                        'key': 'ps7'
+                    }]
+                }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'query': {
+                        'jobs': [{
+                            'names': ['8.0.test_all'],
+                            'dashboards': [],
+                        }]
+                    },
+                    'url': 'https://product-ci.abc.net/'
+                }]
+            }
         }
-
         CiSystem.create_from_seeds(seeds)
-        self.assertEqual(product.rules.filter(is_active=True).count(), 1)
 
-        seeds = {
-            'product_statuses': [{
-                'name': 'Product CI',
-                'is_active': True,
-                'rules': [],
-            }]
-        }
-
-        CiSystem.create_from_seeds(seeds)
-        self.assertEqual(product.rules.filter(is_active=True).count(), 0)
+        self.assertEqual(product.rules.count(), 0)

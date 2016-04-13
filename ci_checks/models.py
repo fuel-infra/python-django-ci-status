@@ -31,7 +31,6 @@ class Rule(models.Model):
 
     ci_system = models.ForeignKey('ci_system.CiSystem',
                                   on_delete=models.CASCADE)
-    version = models.CharField(max_length=255, default='', blank=True)
     gerrit_refspec = models.CharField(max_length=255, default='', blank=True)
     gerrit_branch = models.CharField(max_length=255, default='', blank=True)
     is_active = models.BooleanField(default=False)
@@ -43,7 +42,6 @@ class Rule(models.Model):
             'rule_type',
             'trigger_type',
             'ci_system',
-            'version',
             'gerrit_refspec',
             'gerrit_branch',
         )
@@ -323,13 +321,13 @@ class RuleCheck(models.Model):
         get_latest_by = 'created_at'
 
     def __unicode__(self):
-        text = '{status} (ci: "{ci}", rule: "{rule}", version: "{version}")'
+        text = '{status} (ci: "{ci}", rule: "{rule}")'
 
         return text.format(
             status=self.status_text,
             ci=self.rule.ci_system.name,
             rule=self.rule.name,
-            version=self.rule.version)
+        )
 
     @cached_property
     def status_text(self):

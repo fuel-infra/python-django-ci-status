@@ -1,189 +1,163 @@
-ci_systems:
-- name: 'Product CI:'
-  url: https://product-ci.abc.net/
-  is_active: true
-  sticky_failure: true
-  password: ''
-  username: ''
-  rules:
-  - name: 8.0.test_all
-    rule_type: Job
-    version: '7.0'
-    is_active: true
-    trigger_type: 'Gerrit trigger'
+dashboards:
+  products:
+    - version: 7.0
+      sections:
+        - title: 7.0
+          key: ps7
+    - version: '8.0'
+      sections:
+        - title: 8.0
+          key: ps8
+  ci_systems:
+    - title: 'Product CI:'
+      key: prodci
+    - title: 'Packaging CI:'
+      key: pkgci
+    - title: 'Fuel CI:'
+      key: fci
+    - title: 'MOS Infra CI:'
+      key: mici
+    - title: 'Old Stable CI:'
+      key: osci
+    - title: 'Patching CI:'
+      key: patci
+    - title: 'Plugins CI:'
+      key: plci
+    - title: 'Infra CI:'
+      key: intci
+    - title: 'Jenkins Product:'
+      key: jpci
+    - title: 'OSCI Jenkins:'
+      key: ojci
 
-- name: 'Packaging CI:'
-  url: https://packaging-ci.abc.net/
-  is_active: true
-  sticky_failure: false
-  password: ''
-  username: ''
-  rules:
-  - name: Fuel 8.0
-    rule_type: View
-    version: '8.0'
-    is_active: true
-    trigger_type: 'Gerrit trigger'
+sources:
+  jenkins:
+    - url: https://product-ci.abc.net/
+      query:
+        jobs:
+          - names:
+              - 8.0.test_all
+            sticky: true
+            filter:
+              triggered_by: 'Gerrit trigger'
+              parameters:
+                GERRIT_REFSPEC: origin/master
+            dashboards:
+              - prodci
+              - ps7
 
-- name: 'Fuel CI:'
-  url: https://ci.fuel-abc.net/
-  is_active: true
-  sticky_failure: false
-  password: ''
-  username: ''
-  rules:
-  - name: fuellib_noop_tests
-    rule_type: Job
-    version: '8.0'
-    is_active: true
-    trigger_type: 'Gerrit trigger'
+    - url: https://packaging-ci.abc.net/
+      query:
+        views:
+          - names:
+              - Fuel 8.0
+            sticky: true
+            filter:
+              triggered_by: 'Gerrit trigger'
+            dashboards:
+              - pkgci
 
-- name: 'MOS Infra CI:'
-  url: https://jenkins.mosi.abc.net/
-  is_active: true
-  sticky_failure: false
-  password: ''
-  username: ''
-  rules:
-  - name: periodic-ceilometer-python27-mos70
-    rule_type: Job
-    version: '7.0'
-    is_active: true
-    trigger_type: 'Gerrit trigger'
-  - name: periodic-ceilometer-pep8-mos70
-    rule_type: Job
-    version: '7.0'
-    is_active: true
-    trigger_type: 'Gerrit trigger'
+    - url: https://ci.fuel-abc.net/
+      query:
+        jobs:
+          - names:
+              - fuellib_noop_tests
+            sticky: true
+            filter:
+              triggered_by: 'Gerrit trigger'
+              parameters:
+                GERRIT_REFSPEC: origin/master
+            dashboards:
+              - fci
 
-- name: 'Old Stable CI:'
-  url: https://old-stable-ci.abc.net/
-  is_active: true
-  sticky_failure: false
-  password: ''
-  username: ''
-  rules:
-  - name: 5.0.3.centos.bvt_1
-    rule_type: Job
-    version: '5.0'
-    is_active: true
-    trigger_type: 'Gerrit trigger'
+    - url: https://jenkins.mosi.abc.net/
+      query:
+        jobs:
+          - names:
+              - periodic-ceilometer-python27-mos70
+            sticky: true
+            filter:
+              triggered_by: 'Gerrit trigger'
+            dashboards:
+              - mici
+          - names:
+              - periodic-ceilometer-pep8-mos70
+            sticky: false
+            filter:
+              triggered_by: 'Gerrit trigger'
+              parameters:
+                GERRIT_REFSPEC: origin/master
+            dashboards:
+              - mici
 
-- name: 'Patching CI:'
-  url: https://patching-ci.abc.net/
-  is_active: true
-  sticky_failure: false
-  password: ''
-  username: ''
-  rules:
-  - name: 7.0.swarm
-    rule_type: View
-    version: '7.0'
-    is_active: true
-    trigger_type: 'Gerrit trigger'
+    - url: https://old-stable-ci.abc.net/
+      query:
+        jobs:
+          - names:
+              - 5.0.3.centos.bvt_1
+            sticky: true
+            dashboards:
+              - osci
 
-- name: 'Plugins CI:'
-  url: https://plugins-ci.vm.abc.net/
-  is_active: true
-  sticky_failure: false
-  password: ''
-  username: ''
-  rules:
-  - name: fuel-plugin.calico.build
-    rule_type: Job
-    version: '8.0'
-    is_active: true
-    trigger_type: 'Gerrit trigger'
-  - name: fuel-plugin.contrail.tag
-    rule_type: Job
-    version: '7.0'
-    is_active: true
-    trigger_type: 'Gerrit trigger'
+    - url: https://patching-ci.abc.net/
+      query:
+        views:
+          - names:
+              - 7.0.swarm
+            sticky: true
+            filter:
+              triggered_by: 'Gerrit trigger'
+            dashboards:
+              - patci
 
-- name: 'Infra CI:'
-  url: https://infra-ci.fuel-abc.net/
-  is_active: true
-  sticky_failure: false
-  password: ''
-  username: ''
-  rules:
-  - name: jenkins-jobs.check_shell
-    rule_type: Job
-    version: '7.0'
-    is_active: true
-    trigger_type: 'Gerrit trigger'
+    - url: https://plugins-ci.vm.abc.net/
+      query:
+        jobs:
+          - names:
+              - fuel-plugin.calico.build
+              - fuel-plugin.contrail.tag
+            sticky: true
+            dashboards:
+              - plci
+              - ps8
 
-- name: 'Jenkins Product:'
-  url: http://jenkins-product.srt.abc.net:8080/
-  is_active: true
-  sticky_failure: false
-  password: ''
-  username: ''
-  rules:
-  - name: 6.1.custom_system_test
-    rule_type: job
-    version: '7.0'
-    is_active: true
-    trigger_type: 'Gerrit trigger'
+    - url: https://infra-ci.fuel-abc.net/
+      query:
+        jobs:
+          - names:
+              - jenkins-jobs.check_shell
+            sticky: false
+            dashboards:
+              - intci
+              - ps8
 
-- name: 'OSCI Jenkins:'
-  url: http://osci-jenkins.srt.abc.net/
-  is_active: true
-  sticky_failure: false
-  password: ''
-  username: ''
-  rules:
-  - name: 8.0-test
-    rule_type: View
-    version: '8.0'
-    is_active: true
-    trigger_type: 'Gerrit trigger'
-  - name: 6.1.mos.build-deb-deps
-    rule_type: Job
-    version: '6.1'
-    is_active: true
-    trigger_type: 'Gerrit trigger'
-  - name: 6.1.mos.build-deb-deps
-    version: '6.1'
-    rule_type: Job
-    is_active: true
-    trigger_type: 'Gerrit trigger'
-  - name: 6.1.mos.abort-package-testing
-    rule_type: Job
-    version: '6.1'
-    is_active: true
-    trigger_type: 'Gerrit trigger'
+    - url: http://jenkins-product.srt.abc.net:8080/
+      query:
+        jobs:
+          - names:
+              - 6.1.custom_system_test
+            sticky: false
+            dashboards:
+              - jpci
 
-product_statuses:
-- name: '7.0'
-  is_active: true
-  rules:
-  - name: 8.0.test_all
-    rule_type: Job
-    version: '7.0'
-    trigger_type: 'Gerrit trigger'
-    ci_system_name: 'Product CI:'
-  - name: 8.0-test
-    rule_type: View
-    version: '8.0'
-    trigger_type: 'Gerrit trigger'
-    ci_system_name: 'OSCI Jenkins:'
-
-- name: '8.0'
-  is_active: true
-  rules:
-  - name: 6.1.mos.build-deb-deps
-    rule_type: Job
-    version: '6.1'
-    trigger_type: 'Gerrit trigger'
-    ci_system_name: 'OSCI Jenkins:'
-  - name: jenkins-jobs.check_shell
-    rule_type: Job
-    version: '7.0'
-    trigger_type: 'Gerrit trigger'
-    ci_system_name: 'Infra CI:'
-  - name: fuel-plugin.calico.build
-    rule_type: Job
-    trigger_type: 'Gerrit trigger'
-    version: '8.0'
-    ci_system_name: 'Plugins CI:'
+    - url: http://osci-jenkins.srt.abc.net/
+      query:
+        jobs:
+          - names:
+              - 6.1.mos.build-deb-deps
+              - 6.1.mos.abort-package-testing
+            sticky: false
+            dashboards:
+              - ojci
+              - ps8
+        views:
+          - names:
+              - 8.0-test
+            sticky: false
+            filter:
+              triggered_by: 'Gerrit trigger'
+              parameters:
+                GERRIT_REFSPEC: origin/master
+            dashboards:
+              - ojci
+              - ps7
