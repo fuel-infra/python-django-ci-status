@@ -1,0 +1,13 @@
+{% load helpers %}
+
+<div class="product-card mini">
+  <div class="product-info text-center">
+    <span class="label label-{{ status|status_color }}">
+      {{ status|status_text_for_type }}
+    </span>
+    <p>
+      <a href="/#version-{{ version_code }}">{{ pci.name }} (v{{version_name}})</a>
+    </p>
+    <h5><small>{{ pci|active_status_time:version_name }}</small></h5>
+  </div>
+</div>

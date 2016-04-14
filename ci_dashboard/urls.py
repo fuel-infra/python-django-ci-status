@@ -25,6 +25,8 @@ admin.autodiscover()
 urlpatterns = [
     url(r'^$', views.index, name='ci_dashboard_index'),
     url(r'^dashboard/$', views.dashboard, name='ci_dashboard_dashboard'),
+    url(r'^inline_dashboard/$', views.inline_dashboard,
+        name='ci_dashboard_inline_dashboard'),
     url(r'^statuses/', include('ci_system.urls')),
     url(r'^import_file/$', ci_system.views.import_file, name='import_file'),
     url(r'^admin/', admin.site.urls),

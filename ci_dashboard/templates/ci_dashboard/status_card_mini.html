@@ -1,0 +1,13 @@
+{% load helpers %}
+
+<div class="product-card mini">
+  <div class="product-info text-center">
+    <span class="label label-{{ status|status_color }}">
+      {{ status.status_type|status_text_for_type }}
+    </span>
+    <p>
+      <a href="{% url 'status_detail' status.pk %}">{{ status.ci_system.name }}</a>
+    </p>
+    <h5><small>{{ status.last_changed_at|timesince }}</small></h5>
+  </div>
+</div>

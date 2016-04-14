@@ -47,6 +47,32 @@ def ci_status_history(request, pk):
 
 
 def dashboard(request):
+    context = _dashboard_context(request)
+    return render(request, 'ci_dashboard/dashboard.html', context)
+
+
+def inline_dashboard(request):
+    context = _dashboard_context(request)
+    return render(request, 'ci_dashboard/inline_dashboard_panel.html', context)
+
+
+def _version_has_product_status(version):
+    return any(
+        pci for pci in ProductCi.objects.filter(
+            is_active=True, version=version
+        ) if pci.rules.filter(is_active=True)
+    )
+
+
+def _all_versions_with_products():
+    return sorted(
+        (version, version.replace('.', '_'))
+        for version
+        in ProductCi.objects.values_list('version', flat=True).distinct()
+    )
+
+
+def _dashboard_context(request):
     ci_systems = CiSystem.objects.filter(is_active=True).order_by('url')
     product_statuses = ProductCi.objects.filter(is_active=True)
     products_with_versions = []
@@ -69,25 +95,7 @@ def dashboard(request):
         if ci_system.latest_status()
     ]
 
-    context = {
+    return {
         'statuses_summaries': list(enumerate(statuses_summaries, 1)),
         'products_with_versions': products_with_versions,
     }
-
-    return render(request, 'ci_dashboard/dashboard.html', context)
-
-
-def _version_has_product_status(version):
-    return any(
-        pci for pci in ProductCi.objects.filter(
-            is_active=True, version=version
-        ) if pci.rules.filter(is_active=True)
-    )
-
-
-def _all_versions_with_products():
-    return sorted(
-        (version, version.replace('.', '_'))
-        for version
-        in ProductCi.objects.values_list('version', flat=True).distinct()
-    )

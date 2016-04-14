@@ -32,6 +32,19 @@ section {
   }
 }
 
+.product-card.mini {
+  padding: 5px;
+  margin: 5px;
+
+  .product-info {
+    padding: 0;
+
+    p {
+      margin: 0;
+    }
+  }
+}
+
 .circle-icon {
   border-radius: 50%;
   display: table;

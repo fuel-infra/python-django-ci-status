@@ -1,0 +1,74 @@
+{% load staticfiles %}
+{% load static_asset %}
+{% load helpers %}
+<!doctype html>
+<html class="no-js" lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>CI Status Dashboard{% block title %}{% endblock %}</title>
+    <meta name="description" content="CI status and health tracker">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="apple-touch-icon" href="{% static 'images/apple-touch-icon.png' %}">
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="stylesheet" href="{% static_asset 'stylesheets/application.css' %}">
+  </head>
+  <body>
+    <!--[if lt IE 8]>
+        <p class="browserupgrade">
+            You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.
+        </p>
+    <![endif]-->
+    <main>
+      <div class="container-fluid">
+        <section class="dashboard-product-ci-statuses">
+          <p class="text-center">Product Statuses Summary</p>
+          <div class="row">
+            {% if products_with_versions %}
+              {% for number, version_name, version_code, pci, status in products_with_versions %}
+                <div class="col-xs-2">
+                  {% include "ci_dashboard/product_ci_card_mini.html" with pci=pci version_name=version_name version_code=version_code status=status %}
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="col-xs-12">
+                {% include "ci_dashboard/not_enough_data_panel.html" %}
+              </div>
+            {% endif %}
+          </div>
+        </section>
+
+        <section class="dashboard-ci-statuses">
+          <p class="text-center">CI Statuses Summary</p>
+          {% if statuses_summaries %}
+            <div class="row">
+              {% for number, status in statuses_summaries %}
+                <div class="col-xs-2">
+                  {% include "ci_dashboard/status_card_mini.html" with status=status %}
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="row">
+              <div class="col-xs-12">
+                {% include "ci_dashboard/not_enough_data_panel.html" %}
+              </div>
+            </div>
+          {% endif %}
+        </section>
+
+        <div class="text-center" data-toggle="buttons">
+          <label class="btn btn-default btn-xs" data-toggle="tooltip" data-placement="top" title="If enabled page would be refreshed automatically every 5 minutes">
+            <input id="autorefresh-toggle" type="checkbox" autocomplete="off">
+            <span>Page Autorefresh: OFF</span>
+          </label>
+        </div>
+
+      </div>
+    </main>
+
+    <script src="{% static_asset 'javascripts/application.js' %}"></script>
+    <script src="{% static_asset 'javascripts/bootstrap.js' %}"></script>
+  </body>
+</html>

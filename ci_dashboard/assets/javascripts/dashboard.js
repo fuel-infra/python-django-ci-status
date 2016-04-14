@@ -54,9 +54,9 @@ $(function() {
         activateAutoRefresh(false);
     };
 
-    if (location.pathname == '/dashboard/' &&
-        'localStorage' in window &&
-        window['localStorage'] !== null) {
+    if ((location.pathname == '/dashboard/' ||
+         location.pathname == '/inline_dashboard/') &&
+        'localStorage' in window && window['localStorage'] !== null) {
 
         var toggle = $('#autorefresh-toggle'),
             container = toggle.parent(),
