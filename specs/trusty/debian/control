@@ -26,6 +26,7 @@ Depends: python-django,
          python-mysqldb,
          python-amqp,
          python-celery,
+         python-jsonschema,
          ${misc:Depends},
          ${python:Depends}
 Description: Web application for CI system health and status tracking.

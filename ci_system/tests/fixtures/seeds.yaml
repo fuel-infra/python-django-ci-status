@@ -1,12 +1,12 @@
 dashboards:
   products:
-    - version: 7.0
+    - version: '7.0'
       sections:
-        - title: 7.0
+        - title: '7.0'
           key: ps7
     - version: '8.0'
       sections:
-        - title: 8.0
+        - title: '8.0'
           key: ps8
   ci_systems:
     - title: 'Product CI:'
@@ -37,7 +37,6 @@ sources:
         jobs:
           - names:
               - 8.0.test_all
-            sticky: true
             filter:
               triggered_by: 'Gerrit trigger'
               parameters:
@@ -51,7 +50,6 @@ sources:
         views:
           - names:
               - Fuel 8.0
-            sticky: true
             filter:
               triggered_by: 'Gerrit trigger'
             dashboards:
@@ -62,7 +60,6 @@ sources:
         jobs:
           - names:
               - fuellib_noop_tests
-            sticky: true
             filter:
               triggered_by: 'Gerrit trigger'
               parameters:
@@ -75,14 +72,12 @@ sources:
         jobs:
           - names:
               - periodic-ceilometer-python27-mos70
-            sticky: true
             filter:
               triggered_by: 'Gerrit trigger'
             dashboards:
               - mici
           - names:
               - periodic-ceilometer-pep8-mos70
-            sticky: false
             filter:
               triggered_by: 'Gerrit trigger'
               parameters:
@@ -95,7 +90,6 @@ sources:
         jobs:
           - names:
               - 5.0.3.centos.bvt_1
-            sticky: true
             dashboards:
               - osci
 
@@ -104,7 +98,6 @@ sources:
         views:
           - names:
               - 7.0.swarm
-            sticky: true
             filter:
               triggered_by: 'Gerrit trigger'
             dashboards:
@@ -116,7 +109,6 @@ sources:
           - names:
               - fuel-plugin.calico.build
               - fuel-plugin.contrail.tag
-            sticky: true
             dashboards:
               - plci
               - ps8
@@ -126,7 +118,6 @@ sources:
         jobs:
           - names:
               - jenkins-jobs.check_shell
-            sticky: false
             dashboards:
               - intci
               - ps8
@@ -136,7 +127,6 @@ sources:
         jobs:
           - names:
               - 6.1.custom_system_test
-            sticky: false
             dashboards:
               - jpci
 
@@ -146,14 +136,12 @@ sources:
           - names:
               - 6.1.mos.build-deb-deps
               - 6.1.mos.abort-package-testing
-            sticky: false
             dashboards:
               - ojci
               - ps8
         views:
           - names:
               - 8.0-test
-            sticky: false
             filter:
               triggered_by: 'Gerrit trigger'
               parameters:

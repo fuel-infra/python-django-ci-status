@@ -1,0 +1,219 @@
+{
+    "type": "object",
+    "properties": {
+        "dashboards": {
+            "type": "object",
+            "properties": {
+                "products": {
+                    "type": "array",
+                    "items": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "version": {
+                                    "type": "string"
+                                },
+                                "sections": {
+                                    "type": "array",
+                                    "items": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "title": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "title",
+                                                "key"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "version",
+                                "sections"
+                            ]
+                        }
+                    ]
+                },
+                "ci_systems": {
+                    "type": "array",
+                    "items": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "title": {
+                                    "type": "string"
+                                },
+                                "key": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "title",
+                                "key"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "sources": {
+            "type": "object",
+            "properties": {
+                "jenkins": {
+                    "type": "array",
+                    "items": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "url": {
+                                    "type": "string",
+                                    "format": "uri"
+                                },
+                                "username": {
+                                    "type": "string"
+                                },
+                                "password": {
+                                    "type": "string"
+                                },
+                                "query": {
+                                    "type": "object",
+                                    "properties": {
+                                        "jobs": {
+                                            "type": "array",
+                                            "items": [
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "names": {
+                                                            "type": "array",
+                                                            "items": [
+                                                                {
+                                                                    "type": "string"
+                                                                }
+                                                            ]
+                                                        },
+                                                        "dashboards": {
+                                                            "type": "array",
+                                                            "items": [
+                                                                {
+                                                                    "type": "string"
+                                                                }
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "names",
+                                                        "dashboards"
+                                                    ],
+                                                    "additionalProperties": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "filter": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "triggered_by": {
+                                                                        "type": "string",
+                                                                        "enum": [
+                                                                            "Timer",
+                                                                            "Gerrit trigger",
+                                                                            "Manual",
+                                                                            "Any"
+                                                                        ]
+                                                                    },
+                                                                    "gerrit_refspec": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "gerrit_branch": {
+                                                                        "type": "string"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "views": {
+                                            "type": "array",
+                                            "items": [
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "names": {
+                                                            "type": "array",
+                                                            "items": [
+                                                                {
+                                                                    "type": "string"
+                                                                }
+                                                            ]
+                                                        },
+                                                        "dashboards": {
+                                                            "type": "array",
+                                                            "items": [
+                                                                {
+                                                                    "type": "string"
+                                                                }
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "names",
+                                                        "dashboards"
+                                                    ],
+                                                    "additionalProperties": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "filter": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "triggered_by": {
+                                                                        "type": "string",
+                                                                        "enum": [
+                                                                            "Timer",
+                                                                            "Gerrit trigger",
+                                                                            "Manual",
+                                                                            "Any"
+                                                                        ]
+                                                                    },
+                                                                    "gerrit_refspec": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "gerrit_branch": {
+                                                                        "type": "string"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "url",
+                                "query"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "jenkins"
+            ],
+            "additionalProperties": false
+        }
+    },
+    "required": [
+        "sources"
+    ],
+    "additionalProperties": false
+}

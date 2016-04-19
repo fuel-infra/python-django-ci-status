@@ -4,6 +4,7 @@ include bower.json
 include .bowerrc
 include package.json
 include gulpfile.js
+include ci_dashboard/schema.json
 recursive-include ci_dashboard *.html *.png *.gif *.js *.css *.jpg *.jpeg *.svg *.py, *.scss
 recursive-include ci_system *.html *.png *.gif *.js *.css *.jpg *.jpeg *.svg *.py, *.scss
 recursive-include ci_checks *.html *.png *.gif *.js *.css *.jpg *.jpeg *.svg *.py, *.scss
