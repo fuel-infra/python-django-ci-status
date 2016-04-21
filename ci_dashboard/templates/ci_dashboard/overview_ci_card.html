@@ -3,7 +3,7 @@
 <div class="product-card separate-card">
   {% if ci.latest_status %}
     <div class="circle-icon {{ ci.latest_status|status_color }}">
-      <span>{{ ci.latest_status.status_text }}</span>
+      <span data-toggle="tooltip" data-placement="right" title="Rules Total: {{ ci.latest_status.rule_checks|length }} / Failed: {{ ci.latest_status.failed_rule_checks|length }}">{{ ci.latest_status.status_text }}</span>
     </div>
     <div class="product-info">
       <h4><a href="{{ ci.url }}" target="_blank">{{ ci.name }}</a></h4>

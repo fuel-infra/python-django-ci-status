@@ -253,12 +253,27 @@ class Rule(models.Model):
                 self.last_updated = last_updated
                 self.save()
 
+            if job_info.get('lastSuccessfulBuild'):  # might be None
+                success_build = job_info.get('lastSuccessfulBuild').get(
+                    'url', ''
+                )
+            else:
+                success_build = ''
+            if job_info.get('lastFailedBuild'):
+                failed_build = job_info.get('lastFailedBuild').get(
+                    'url', ''
+                )
+            else:
+                failed_build = ''
+
             return RuleCheck(
                 rule=self,
                 build_number=build_id,
                 status_type=status,
                 running=running,
                 queued=queued,
+                last_successfull_build_link=success_build,
+                last_failed_build_link=failed_build,
                 created_at=self.last_updated)
         else:
             return None if is_view else last_check
@@ -303,6 +318,8 @@ class RuleCheck(models.Model):
     queued = models.IntegerField(default=0)
     build_number = models.IntegerField(default=0)
     is_running_now = models.BooleanField(default=False)
+    last_successfull_build_link = models.URLField(blank=True, default='')
+    last_failed_build_link = models.URLField(blank=True, default='')
 
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)

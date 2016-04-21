@@ -43,6 +43,12 @@
 
                   <ul class="list-inline">
                     <li>{% rulecheck_link_to_ci rule_check %}</li>
+                    {% if rule_check.last_successfull_build_link %}
+                      | <li><a href="{{ rule_check.last_successfull_build_link }}" target="_blank">Last Successfull Build</a></li>
+                    {% endif %}
+                    {% if rule_check.last_failed_build_link %}
+                      | <li><a href="{{ rule_check.last_failed_build_link }}" target="_blank">Last Failed Build</a></li>
+                    {% endif %}
                   </ul>
                 </li>
               {% endfor %}
