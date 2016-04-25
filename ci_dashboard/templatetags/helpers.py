@@ -64,3 +64,19 @@ def add_class(field, css):
 @register.filter(name='sorted_by_rule_name')
 def sorted_by_rule_name(rule_checks):
     return sorted(rule_checks, key=lambda rc: rc.rule.name)
+
+
+@register.filter(name='badge_code_by_color')
+def badge_code_by_color(color):
+    if color == 'success':
+        result = 'S'
+    elif color == 'default':
+        result = 'A'
+    elif color == 'danger':
+        result = 'F'
+    elif color == 'warning':
+        result = 'W'
+    else:
+        result = 'E'
+
+    return result

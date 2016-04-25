@@ -8,14 +8,24 @@
     <div class="product-info">
       <h4><a href="{{ ci.url }}" target="_blank">{{ ci.name }}</a></h4>
       <p>{{ ci.latest_status.last_changed_at|timesince }}</p>
+      {% if ci.latest_status.is_manual %}
+        <p>(assigned by: {{ ci.latest_status.author_username }})</p>
+      {% else %}
+        <br>
+      {% endif %}
       <hr>
       <p>{{ ci.latest_status.summary }}</p>
       <a href="{% url 'status_detail' ci.latest_status.pk %}" class="btn btn-default btn-block">
-        See Details
+        Details
       </a>
-      <a href="#" data-tab="panel{{ number }}v" class="ci-card-link btn btn-info btn-block">
-        CI Statuses History
+      <a href="#" data-tab="panel{{ number }}v" class="ci-card-link btn btn-default btn-block">
+        Statuses History
       </a>
+      {% if user.is_authenticated and user.is_active and user|can_manage_statuses %}
+        <a href="{% url 'status_new' ci.pk %}" class="btn btn-info btn-block">
+          Set New Status
+        </a>
+      {% endif %}
     </div>
   {% else %}
     <div class="product-info">

@@ -1,0 +1,92 @@
+<div class="modal fade" id="configExampleModal" tabindex="-1" role="dialog" aria-labelledby="#configExampleModal">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="configExampleModal">Import file example</h4>
+      </div>
+      <div class="modal-body">
+        <pre><code>
+dashboards: # list of dashboards to display
+  products: # product statuses
+    - version: master
+      sections:
+        - title: Master Product
+          key: mcb # uniq key
+    - version: 9.0
+      sections:
+        - title: Product 9.0
+          key: 90cb
+        - title: Tempo 9.0
+          key: 90tp
+
+  ci_systems: # ci systems
+    - title: Public packaging CI
+      key: ppci
+    - title: Fuel CI
+      key: fci
+
+sources: # source configuration
+  jenkins:
+    - url: https://product-ci.infra.test/
+      query: # set of rules on selected ci
+        jobs: # Jenkins jobs rules configurations
+          - names:
+              - 9.0.all
+              - 9.0.test_all
+            filter: # Gerrit filters
+              triggered_by: Any
+            dashboards: # the list of dashboards keys that uses job defined
+              - ppci
+              - 90cb
+              - mcb
+          - names:
+              - 9.0.swarm.timer.stable
+            filter:
+              triggered_by: Any
+            dashboards:
+              - ppci
+              - mcb
+        views: # Jenkins views rules configurations (checked each job on view)
+          - names:
+              - 10.0
+            filter:
+              triggered_by: Any
+            dashboards:
+              - ppci
+              - mcb
+    - url: https://ci.fuel.test/
+      query:
+        jobs:
+          - names:
+              - fuellib_noop_tests
+              - master.fuel-library.pkgs.ubuntu.neutron_vlan_ha
+            filter:
+              triggered_by: Any
+            dashboards:
+              - fci
+              - 90cb
+          - names:
+              - master.fuel-web.pkgs.ubuntu.review_fuel_web_deploy
+            filter:
+              triggered_by: Any
+            dashboards:
+              - fci
+              - mcb
+        views:
+          - names:
+              - docs
+            filter:
+              triggered_by: Any
+            dashboards:
+              - fci
+              - mcb
+              - 90tp
+        </code></pre>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

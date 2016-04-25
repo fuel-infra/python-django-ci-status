@@ -49,8 +49,9 @@ def status_detail(request, pk):
 
 @staff_member_required
 @permission_required('ci_system.add_status', raise_exception=True)
-def status_new(request):
-    form = StatusForm(request.POST or None)
+def status_new(request, ci_id=None):
+    form = StatusForm(request.POST or None,
+                      initial={'is_manual': True, 'ci_system':  ci_id})
     context = {
         'csrf_token': csrf(request)['csrf_token'],
         'form': form,
