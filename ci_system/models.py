@@ -607,7 +607,7 @@ class CiSystem(models.Model):
 class ProductCi(models.Model):
 
     rules = models.ManyToManyField(Rule)
-    name = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=50)
     is_active = models.BooleanField(default=False)
     version = models.CharField(max_length=255, default='', blank=True)
 

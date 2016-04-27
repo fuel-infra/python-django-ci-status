@@ -99,7 +99,10 @@ class RuleTests(TestCase):
             "number": 547,
             "url": "https://ci.fuel-abc.net/job/kilo.ha_nova_vlan/547/"
         },
-        "lastFailedBuild": "null",
+        "lastFailedBuild": {
+            "number": 542,
+            "url": "https://ci.fuel-abc.net/job/kilo.ha_nova_vlan/542/"
+        },
         "lastStableBuild": {
             "number": 547,
             "url": "https://ci.fuel-abc.net/job/kilo.ha_nova_vlan/547/"
@@ -173,7 +176,10 @@ class RuleTests(TestCase):
             "number": 547,
             "url": "https://ci.fuel-abc.net/job/kilo.ha_neutron_vlan/547/"
         },
-        "lastFailedBuild": "null",
+        "lastFailedBuild": {
+            "number": 542,
+            "url": "https://ci.fuel-abc.net/job/kilo.ha_neutron_vlan/542/"
+        },
         "lastStableBuild": {
             "number": 547,
             "url": "https://ci.fuel-abc.net/job/kilo.ha_neutron_vlan/547/"
@@ -247,7 +253,10 @@ class RuleTests(TestCase):
             "number": 547,
             "url": "https://ci.fuel-abc.net/job/kilo.master_node/547/"
         },
-        "lastFailedBuild": "null",
+        "lastFailedBuild": {
+            "number": 542,
+            "url": "https://ci.fuel-abc.net/job/kilo.master_node/542/"
+        },
         "lastStableBuild": {
             "number": 547,
             "url": "https://ci.fuel-abc.net/job/kilo.master_node/547/"

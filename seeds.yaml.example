@@ -1,66 +1,76 @@
-ci_systems:
-- name: 'Fuel CI:'
-  is_active: true
-  sticky_failure: true
-  password: ''
-  url: http://ci.fuel-infra.org/
-  rules:
-  - name: 'gating'
-    rule_type: View
-    version: '8.0'
-    is_active: true
-    trigger_type: 'Gerrit trigger'
-    gerrit_branch: 'master'
-  - name: '8.0-community.all'
-    rule_type: Job
-    version: '8.0'
-    is_active: true
-    trigger_type: 'Timer'
-  - name: '7.0-community.all'
-    rule_type: Job
-    version: '7.0'
-    is_active: true
-  - name: '9.0-community.all'
-    rule_type: Job
-    version: '9.0'
-    is_active: true
-  - name: '7.0.verify-python-fuelclient'
-    rule_type: Job
-    version: '7.0'
-    is_active: true
-    trigger_type: 'Timer'
-    gerrit_refspec: 'refs/heads/stable/7.0'
+dashboards:
+  products:
+    - version: master
+      sections:
+        - title: Master Product
+          key: mcb
+    - version: 9.0
+      sections:
+        - title: Product 9.0
+          key: 90cb
+        - title: Tempo 9.0
+          key: 90tp
 
-product_statuses:
-- name: '7.0'
-  is_active: true
-  rules:
-  - name: '7.0-community.all'
-    rule_type: Job
-    version: '7.0'
-    is_active: true
-    ci_system_name: 'Fuel CI:'
-  - name: '7.0.verify-python-fuelclient'
-    rule_type: Job
-    version: '7.0'
-    is_active: true
-    trigger_type: 'Timer'
-    gerrit_refspec: 'refs/heads/stable/7.0'
-    ci_system_name: 'Fuel CI:'
 
-- name: '8.0'
-  is_active: true
-  rules:
-  - name: '8.0-community.all'
-    rule_type: Job
-    version: '8.0'
-    is_active: true
-    trigger_type: 'Timer'
-    ci_system_name: 'Fuel CI:'
-  - name: 'gating'
-    rule_type: View
-    version: '8.0'
-    is_active: true
-    trigger_type: 'Gerrit trigger'
-    gerrit_branch: 'master'
-    ci_system_name: 'Fuel CI:'
+  ci_systems:
+    - title: Public packaging CI
+      key: ppci
+    - title: Fuel CI
+      key: fci
+
+sources:
+  jenkins:
+    - url: https://product.abc.net/
+      query:
+        jobs:
+          - names:
+              - 9.0.all
+              - 9.0.test_all
+            filter:
+              triggered_by: Any
+            dashboards:
+              - ppci
+              - 90cb
+              - mcb
+          - names:
+              - 9.0.swarm.timer.stable
+            filter:
+              triggered_by: Any
+            dashboards:
+              - ppci
+              - mcb
+        views:
+          - names:
+              - '10.0'
+            filter:
+              triggered_by: Any
+            dashboards:
+              - ppci
+              - mcb
+    - url: https://ci.abc-infra.net/
+      query:
+        jobs:
+          - names:
+              - fuellib_noop_tests
+              - master.fuel-library.pkgs.ubuntu.neutron_vlan_ha
+            filter:
+              triggered_by: Any
+            dashboards:
+              - fci
+              - 90cb
+          - names:
+              - master.fuel-web.pkgs.ubuntu.review_fuel_web_deploy
+            filter:
+              triggered_by: Any
+            dashboards:
+              - fci
+              - mcb
+        views:
+          - names:
+              - docs
+            filter:
+              triggered_by: Any
+            dashboards:
+              - fci
+              - mcb
+              - 90tp

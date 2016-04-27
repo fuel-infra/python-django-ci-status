@@ -150,13 +150,14 @@ class Rule(models.Model):
             job_info = server.get_job_info(job_name)
         except NotFoundException:
             LOGGER.error(
-                'Could not retrive job info. Job %s, server %s', self, server)
+                'Could not retrive job info. Job %s, server %s',
+                self, server.server)
             return None
 
-        if not job_info['lastCompletedBuild']:
+        if not job_info.get('lastCompletedBuild'):
             LOGGER.error(
                 'Job "%s" on server "%s" was never built. Skipped it.',
-                job_name, server)
+                job_name, server.server)
             return None
 
         last_build_id = job_info['lastBuild']['number'] \

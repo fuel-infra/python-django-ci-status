@@ -68,7 +68,8 @@ def _all_versions_with_products():
     return sorted(
         (version, version.replace('.', '_'))
         for version
-        in ProductCi.objects.values_list('version', flat=True).distinct()
+        in ProductCi.objects.filter(is_active=True).values_list(
+            'version', flat=True).distinct()
     )
 
 
