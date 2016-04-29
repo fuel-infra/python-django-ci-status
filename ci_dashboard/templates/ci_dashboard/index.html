@@ -52,12 +52,13 @@
           {% for number, ci in ci_systems_with_index %}
             <li role="presentation">
               <a href="#panel{{ number }}v" aria-controls="panel{{ number }}v" role="tab" data-toggle="tab">
-                <h5 class='with-label'>{{ ci.name }}</h5>
-                {% if ci.latest_status %}
-                  <span class="{{ ci.latest_status|status_color }} badge pull-right">
-                    {{ ci.latest_status|status_color|badge_code_by_color }}
-                  </span>
-                {% endif %}
+                <h5 class='with-label'>{{ ci.name }}
+                  {% if ci.latest_status %}
+                    <span class="{{ ci.latest_status|status_color }} badge">
+                      {{ ci.latest_status|status_color|badge_code_by_color }}
+                    </span>
+                  {% endif %}
+                </h5>
               </a>
             </li>
           {% endfor %}

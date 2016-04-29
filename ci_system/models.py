@@ -436,7 +436,7 @@ class CiSystem(models.Model):
 
                             # rule in product
                             if key in products.keys():
-                                rule['ci_system_name'] = ci['name']
+                                rule['url'] = ci['url']
                                 products[key]['rules'].append(rule)
                         ci['rules'].append(rule)
 
@@ -451,7 +451,7 @@ class CiSystem(models.Model):
 
                             # rule in product
                             if key in products.keys():
-                                rule['ci_system_name'] = ci['name']
+                                rule['url'] = ci['url']
                                 products[key]['rules'].append(rule)
                         ci['rules'].append(rule)
             except KeyError as exc:
@@ -572,7 +572,7 @@ class CiSystem(models.Model):
     @classmethod
     def _rule_by_dict(cls, rule_dict):
         try:
-            ci = cls.objects.get(name=rule_dict['ci_system_name'])
+            ci = cls.objects.get(url=rule_dict['url'], is_active=True)
 
             rule = Rule.objects.get(
                 name=rule_dict['name'],
@@ -603,6 +603,10 @@ class CiSystem(models.Model):
                 'during import: %s',
                 exc
             )
+        except cls.MultipleObjectsReturned as exc:
+            LOGGER.error(
+                'Inconsistency detected! Duplicate active CI system with the '
+                'same name: %s', exc)
         except KeyError as exc:
             LOGGER.error(
                 'Rule for Product Status configure improperly: %s', exc)
@@ -743,7 +747,7 @@ class ProductCi(models.Model):
     def deactivate_previous_products(cls, old_names, new_names):
         for name, version in old_names - new_names:
             try:
-                p = cls.objects.get(name=name, version=version)
+                p = cls.objects.get(name=name, version=version, is_active=True)
                 p.is_active = False
                 p.save()
             except cls.DoesNotExist as exc:

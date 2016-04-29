@@ -756,10 +756,10 @@ class CiSystemTests(TestCase):
 
         rules, error = CiSystem.find_rules_for_product([{
             'name': 'rule_1',
-            'ci_system_name': '1',
+            'url': VALID_URL + '_1',
         }, {
             'name': 'rule_3',
-            'ci_system_name': 'unknown',
+            'url': VALID_URL + '_unknown',
         }])
 
         self.assertTrue(error)
@@ -767,10 +767,10 @@ class CiSystemTests(TestCase):
 
         rules, error = CiSystem.find_rules_for_product([{
             'name': 'rule_1',
-            'ci_system_name': '1',
+            'url': VALID_URL + '_1',
         }, {
             'name': 'rule_10',
-            'ci_system_name': '2',
+            'url': VALID_URL + '_10',
         }])
 
         self.assertTrue(error)
@@ -778,13 +778,13 @@ class CiSystemTests(TestCase):
 
         rules, error = CiSystem.find_rules_for_product([{
             'name': 'rule_1',
-            'ci_system_name': '1',
+            'url': VALID_URL + '_1',
         }, {
             'name': 'rule_2',
-            'ci_system_name': '2',
+            'url': VALID_URL + '_2',
         }, {
             'name': 'rule_3',
-            'ci_system_name': '3',
+            'url': VALID_URL + '_3',
         }])
 
         self.assertFalse(error)

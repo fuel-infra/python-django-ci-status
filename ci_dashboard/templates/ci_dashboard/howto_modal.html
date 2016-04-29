@@ -7,49 +7,49 @@
       </div>
       <div class="modal-body">
         <pre><code>
-dashboards: # list of dashboards to display
-  products: # product statuses
+dashboards:
+  products:
     - version: master
       sections:
         - title: Master Product
-          key: mcb # uniq key
-    - version: 9.0
+          key: mcb
+    - version: '9.0'
       sections:
         - title: Product 9.0
           key: 90cb
         - title: Tempo 9.0
           key: 90tp
 
-  ci_systems: # ci systems
+  ci_systems:
     - title: Public packaging CI
       key: ppci
     - title: Fuel CI
       key: fci
 
-sources: # source configuration
+sources:
   jenkins:
     - url: https://product-ci.infra.test/
-      query: # set of rules on selected ci
-        jobs: # Jenkins jobs rules configurations
+      query:
+        jobs:
           - names:
-              - 9.0.all
-              - 9.0.test_all
-            filter: # Gerrit filters
+              - '9.0.all'
+              - '9.0.test_all'
+            filter:
               triggered_by: Any
-            dashboards: # the list of dashboards keys that uses job defined
+            dashboards:
               - ppci
               - 90cb
               - mcb
           - names:
-              - 9.0.swarm.timer.stable
+              - '9.0.swarm.timer.stable'
             filter:
               triggered_by: Any
             dashboards:
               - ppci
               - mcb
-        views: # Jenkins views rules configurations (checked each job on view)
+        views:
           - names:
-              - 10.0
+              - '10.0'
             filter:
               triggered_by: Any
             dashboards:

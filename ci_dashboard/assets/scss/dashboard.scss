@@ -10,6 +10,12 @@ section {
 
 .with-label {
   display: inline;
+  padding-right: 5px;
+}
+
+.with-label > .badge {
+  position: absolute;
+  right: 5px;
 }
 
 .product-card {
@@ -164,4 +170,8 @@ a.job-link {
 
 @keyframes blinker {
   50% { opacity: 0.3; }
+}
+
+footer {
+  padding-bottom: 20px;
 }
