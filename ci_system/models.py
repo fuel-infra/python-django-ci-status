@@ -1,13 +1,15 @@
 from __future__ import unicode_literals
 
+import jsonschema
 import logging
 import yaml
 
-from django.db import models, IntegrityError
-from django.db.models.signals import pre_delete
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
+from django.db import models, IntegrityError
+from django.db.models.signals import pre_delete
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.timesince import timesince
@@ -17,7 +19,6 @@ from jenkins import Jenkins, JenkinsException
 from ci_system import constants
 
 from ci_checks.models import Rule, RuleCheck, RuleException
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -288,8 +289,25 @@ class CiSystem(models.Model):
             'ps_imported': 0,
         }
 
+        if settings.JSON_SCHEMA:
+            try:
+                jsonschema.validate(seeds, settings.JSON_SCHEMA)
+            except jsonschema.ValidationError as exc:
+                msg = 'Import file does not follow json schema: %s' % exc
+                LOGGER.error(msg)
+                result['errors'].append(msg)
+                return result
+        else:
+            msg = ('Something went wrong with schema.json validation. '
+                   'Please contact the administrator.')
+            LOGGER.error(msg)
+            result['errors'].append(msg)
+            return result
+
         previous_cis = {ci.url for ci in cls.objects.all()}
-        previous_products_names = {p.name for p in ProductCi.objects.all()}
+        previous_products_names = {
+            (p.name, p.version) for p in ProductCi.objects.all()
+        }
         new_cis, new_products_names = set(), set()
 
         if seeds:
@@ -317,7 +335,9 @@ class CiSystem(models.Model):
                 else:
                     result['objects'].append(new_product)
                     result['ps_imported'] += 1
-                    new_products_names.add(new_product.name)
+                    new_products_names.add(
+                        (new_product.name, new_product.version)
+                    )
 
             cls.deactivate_previous_cis(previous_cis, new_cis)
             ProductCi.deactivate_previous_products(
@@ -721,9 +741,9 @@ class ProductCi(models.Model):
 
     @classmethod
     def deactivate_previous_products(cls, old_names, new_names):
-        for name in old_names - new_names:
+        for name, version in old_names - new_names:
             try:
-                p = cls.objects.get(name=name)
+                p = cls.objects.get(name=name, version=version)
                 p.is_active = False
                 p.save()
             except cls.DoesNotExist as exc:

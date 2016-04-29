@@ -9,10 +9,14 @@ https://docs.djangoproject.com/en/1.6/ref/settings/
 """
 
 import os
+import logging
+import json
 
 import site_settings
 
 from django.contrib.messages import constants as messages
+
+LOGGER = logging.getLogger(__name__)
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -138,5 +142,25 @@ CELERY_TIMEZONE = 'UTC'
 CELERY_ENABLE_UTC = True
 
 STAFF_GROUPS = ('ci', 'devops-all')
+
+
+def _load_schema(path):
+    print 'load', path
+    try:
+        with open(path) as f:
+            return json.loads(f.read())
+    except IOError as exc:
+        LOGGER.error(
+            'Can not read `schema.json` file for import validation: %s', exc)
+    except ValueError as exc:
+        LOGGER.error('Can not parse `schema.json` file %s', exc)
+    return None
+
+SCHEMA_PATH = os.path.join(os.path.dirname(__file__), 'schema.json')
+DEFAULT_SCHEMA_PATH = '/usr/share/python-django-ci-status/schema.json'
+
+JSON_SCHEMA = _load_schema(
+    SCHEMA_PATH if os.path.exists(SCHEMA_PATH) else DEFAULT_SCHEMA_PATH
+)
 
 site_settings.update_settings(globals(), 'CI_STATUS', '.:/etc/ci_status')

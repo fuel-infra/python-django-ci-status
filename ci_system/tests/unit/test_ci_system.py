@@ -920,30 +920,22 @@ class CiSystemTests(TestCase):
         self.assertEqual(Rule.objects.filter(is_active=True).count(), 1)
 
     def test_create_from_seeds_with_empty_seeds(self):
-        self.assertEqual(
-            CiSystem.create_from_seeds({}),
-            {
-                'objects': [],
-                'errors': [],
-                'cis_total': 0,
-                'cis_imported': 0,
-                'ps_total': 0,
-                'ps_imported': 0,
-            }
-        )
+        result = CiSystem.create_from_seeds({})
+        self.assertEqual(result['objects'], [])
+        self.assertEqual(result['cis_total'], 0)
+        self.assertEqual(result['cis_imported'], 0)
+        self.assertEqual(result['ps_total'], 0)
+        self.assertEqual(result['ps_imported'], 0)
+        self.assertTrue('not follow json schema' in result['errors'][0])
 
     def test_create_from_seeds_with_missed_seeds(self):
-        self.assertEqual(
-            CiSystem.create_from_seeds({'test': [1, 2, 3]}),
-            {
-                'objects': [],
-                'errors': [],
-                'cis_total': 0,
-                'cis_imported': 0,
-                'ps_total': 0,
-                'ps_imported': 0,
-            }
-        )
+        result = CiSystem.create_from_seeds({'test': [1, 2, 3]})
+        self.assertEqual(result['objects'], [])
+        self.assertEqual(result['cis_total'], 0)
+        self.assertEqual(result['cis_imported'], 0)
+        self.assertEqual(result['ps_total'], 0)
+        self.assertEqual(result['ps_imported'], 0)
+        self.assertTrue('not follow json schema' in result['errors'][0])
 
     def test_create_from_seeds_with_valid_unexistent_cis_with_one_rule(self):
         before = CiSystem.objects.count()
@@ -1092,12 +1084,25 @@ class CiSystemTests(TestCase):
     def test_create_from_seeds_with_valid_unexistent_cis_without_rules(self):
         before = CiSystem.objects.count()
         seeds = {
+            'dashboards': {
+                'ci_systems': [{
+                    'title': '1',
+                    'key': 'ci1'
+                }, {
+                    'title': '2',
+                    'key': 'ci2'
+                }]
+            },
             'sources': {
                 'jenkins': [{
-                    'url': 'https://product-ci.abc.net/'
+                    'url': 'https://product-ci.abc.net/',
+                    'query': {
+                        'jobs': []
+                    }
                 }]
             }
         }
+
         self.assertEqual(
             CiSystem.create_from_seeds(seeds),
             {
@@ -1114,7 +1119,10 @@ class CiSystemTests(TestCase):
         seeds = {
             'sources': {
                 'jenkins': [{
-                    'url': 'https://infra-ci.abc.net/'
+                    'url': 'https://infra-ci.abc.net/',
+                    'query': {
+                        'jobs': []
+                    }
                 }]
             }
         }
@@ -1143,12 +1151,19 @@ class CiSystemTests(TestCase):
         seeds = {
             'sources': {
                 'jenkins': [{
-                    'url': 'https://product-ci.infra.abc.net/'
+                    'url': 'https://product-ci.infra.abc.net/',
+                    'query': {
+                        'jobs': []
+                    }
                 }, {
-                    'url': 'https://status-ci.infra.abc.net/'
+                    'url': 'https://status-ci.infra.abc.net/',
+                    'query': {
+                        'jobs': []
+                    }
                 }]
             }
         }
+
         result = CiSystem.create_from_seeds(seeds)
 
         self.assertEqual(len(result['objects']), 2)
@@ -1163,18 +1178,35 @@ class CiSystemTests(TestCase):
             url='https://product-ci.infra.abc.net/',
             is_active=True,
         )
+
+        CiSystem.objects.create(
+            name='Product CI2',
+            url='https://product-ci2.infra.abc.net/',
+            is_active=True,
+        )
+
         seeds = {
-            'ci_systems': [{
-                'name': 'Product CI',
-                'url': 'https://product-ci.infra.abc.net/',
-            }, {
-                'name': 'Status CI',
-                'url': 'https://status-ci.infra.abc.net/',
-            }]
+            'dashboards': {
+                'ci_systems': [{
+                    'title': 'Product CI3',
+                    'key': 'test3',
+                }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'url': 'https://product-ci3.infra.abc.net/',
+                    'query': {
+                        'jobs': [{
+                            'names': ['9.0.test_one'],
+                            'dashboards': ['test3']
+                        }]
+                    }
+                }]
+            }
         }
 
         CiSystem.create_from_seeds(seeds)
-        self.assertEqual(CiSystem.objects.filter(is_active=True).count(), 0)
+        self.assertEqual(CiSystem.objects.filter(is_active=True).count(), 1)
 
     def test_create_from_seeds_handles_errors(self):
         CiSystem.objects.create(
@@ -1231,9 +1263,9 @@ class CiSystemTests(TestCase):
 
         result = CiSystem.create_from_seeds(seeds)
         self.assertEqual(len(result['objects']), 0)
-        self.assertEqual(result['cis_total'], 1)
+        self.assertEqual(result['cis_total'], 0)
         self.assertEqual(result['cis_imported'], 0)
-        self.assertTrue('Can not create rule' in ''.join(result['errors']))
+        self.assertTrue('not follow json schema' in ''.join(result['errors']))
 
     def test_create_from_seeds_cis_updates_existent_cis(self):
         CiSystem.objects.create(
@@ -1283,11 +1315,26 @@ class CiSystemTests(TestCase):
         seeds = {
             'dashboards': {
                 'products': [{
-                    'version': 7.0,
+                    'version': '7.0',
                     'sections': [{
-                        'title': 7.0,
+                        'title': '7.0',
                         'key': 'ps7'
                     }]
+                }],
+                'ci_systems': [{
+                    'title': '1',
+                    'key': 'ci1'
+                }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'url': 'https://product-ci3.infra.abc.net/',
+                    'query': {
+                        'jobs': [{
+                            'names': ['9.0.test_one'],
+                            'dashboards': ['ci1']
+                        }]
+                    }
                 }]
             }
         }
@@ -1295,10 +1342,12 @@ class CiSystemTests(TestCase):
         self.assertEqual(
             CiSystem.create_from_seeds(seeds),
             {
-                'objects': [ProductCi.objects.first()],
+                'objects': [
+                    CiSystem.objects.first(), ProductCi.objects.first()
+                ],
                 'errors': [],
-                'cis_total': 0,
-                'cis_imported': 0,
+                'cis_total': 1,
+                'cis_imported': 1,
                 'ps_total': 1,
                 'ps_imported': 1,
             }
@@ -1306,34 +1355,31 @@ class CiSystemTests(TestCase):
         self.assertEqual(ProductCi.objects.count(), before + 1)
 
     def test_create_from_seeds_with_invalid_psis_without_rules(self):
-        missed_msg = (
-            u'Can not import Product Ci: "%s" from the seeds file. '
-            u'Required parameter is missed: u\'%s\''
-        )
         before = ProductCi.objects.count()
 
         seeds = {
             'dashboards': {
                 'products': [{
-                    'version': 7.0,
+                    'version': '7.0',
                     'sections': [{
                         'key': 'ps7'
                     }]
                 }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'url': 'https://product-ci3.infra.abc.net/',
+                    'query': {
+                        'jobs': []
+                    }
+                }]
             }
         }
 
-        self.assertEqual(
-            CiSystem.create_from_seeds(seeds),
-            {
-                'objects': [],
-                'errors': [missed_msg % ('', 'title')],
-                'cis_total': 0,
-                'cis_imported': 0,
-                'ps_total': 1,
-                'ps_imported': 0,
-            }
-        )
+        result = CiSystem.create_from_seeds(seeds)
+        self.assertEqual(result['ps_total'], 0)
+        self.assertEqual(result['ps_imported'], 0)
+        self.assertTrue('not follow json schema' in result['errors'][0])
         self.assertEqual(ProductCi.objects.count(), before)
 
     def test_create_from_seeds_with_valid_existent_psis_without_rules(self):
@@ -1342,17 +1388,25 @@ class CiSystemTests(TestCase):
         seeds = {
             'dashboards': {
                 'products': [{
-                    'version': 7.0,
+                    'version': '7.0',
                     'sections': [{
                         'title': 'Product CI',
                         'key': 'ps7'
                     }]
                 }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'url': 'https://product-ci3.infra.abc.net/',
+                    'query': {
+                        'jobs': []
+                    }
+                }]
             }
         }
 
         result = CiSystem.create_from_seeds(seeds)
-        self.assertEqual(len(result['objects']), 1)
+        self.assertEqual(len(result['objects']), 2)
         self.assertEqual(result['ps_total'], 1)
         self.assertEqual(result['ps_imported'], 1)
         self.assertEqual(result['errors'], [])
@@ -1364,11 +1418,22 @@ class CiSystemTests(TestCase):
         seeds = {
             'dashboards': {
                 'products': [{
-                    'version': 7.0,
+                    'version': '7.0',
                     'sections': [{
                         'title': 'Product CI2',
                         'key': 'ps7'
                     }]
+                }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'url': 'https://product-ci3.infra.abc.net/',
+                    'query': {
+                        'jobs': [{
+                            'names': ['9.0.test_one'],
+                            'dashboards': ['test3']
+                        }]
+                    }
                 }]
             }
         }
@@ -1384,17 +1449,28 @@ class CiSystemTests(TestCase):
         seeds = {
             'dashboards': {
                 'products': [{
-                    'version': 7.0,
+                    'version': '7.0',
                     'sections': [{
                         'title': '*' * 200,
                         'key': 'ps7'
                     }]
                 }]
+            },
+            'sources': {
+                'jenkins': [{
+                    'url': 'https://product-ci3.infra.abc.net/',
+                    'query': {
+                        'jobs': [{
+                            'names': ['9.0.test_one'],
+                            'dashboards': ['test3']
+                        }]
+                    }
+                }]
             }
         }
 
         result = CiSystem.create_from_seeds(seeds)
-        self.assertEqual(len(result['objects']), 0)
+        self.assertEqual(len(result['objects']), 1)
         self.assertEqual(result['ps_total'], 1)
         self.assertEqual(result['ps_imported'], 0)
         self.assertTrue('Ensure this value' in ''.join(result['errors']))
@@ -1404,9 +1480,9 @@ class CiSystemTests(TestCase):
         seeds = {
             'dashboards': {
                 'products': [{
-                    'version': 7.0,
+                    'version': '7.0',
                     'sections': [{
-                        'title': 7.0,
+                        'title': '7.0',
                         'key': 'ps7'
                     }]
                 }]
@@ -1437,9 +1513,9 @@ class CiSystemTests(TestCase):
         seeds = {
             'dashboards': {
                 'products': [{
-                    'version': 7.0,
+                    'version': '7.0',
                     'sections': [{
-                        'title': 7.0,
+                        'title': '7.0',
                         'key': 'ps7'
                     }]
                 }]
@@ -1469,9 +1545,9 @@ class CiSystemTests(TestCase):
         seeds = {
             'dashboards': {
                 'products': [{
-                    'version': 7.0,
+                    'version': '7.0',
                     'sections': [{
-                        'title': 7.0,
+                        'title': '7.0',
                         'key': 'ps7'
                     }]
                 }]
@@ -1493,9 +1569,9 @@ class CiSystemTests(TestCase):
 
         result = CiSystem.create_from_seeds(seeds)
         self.assertEqual(len(result['objects']), 0)
-        self.assertEqual(result['ps_total'], 1)
+        self.assertEqual(result['ps_total'], 0)
         self.assertEqual(result['ps_imported'], 0)
-        self.assertTrue('not create rule' in ''.join(result['errors']))
+        self.assertTrue('not follow json schema' in ''.join(result['errors']))
 
     def test_create_from_seeds_psis_updates_existent_psis_rules(self):
         # create a ProductCi with one rule
@@ -1519,7 +1595,7 @@ class CiSystemTests(TestCase):
         seeds = {
             'dashboards': {
                 'products': [{
-                    'version': 7.0,
+                    'version': '7.0',
                     'sections': [{
                         'title': 'Product CI',
                         'key': 'ps7'
@@ -1549,7 +1625,7 @@ class CiSystemTests(TestCase):
         seeds = {
             'dashboards': {
                 'products': [{
-                    'version': 7.0,
+                    'version': '7.0',
                     'sections': [{
                         'title': 'Product CI',
                         'key': 'ps7'
@@ -1576,7 +1652,7 @@ class CiSystemTests(TestCase):
         seeds = {
             'dashboards': {
                 'products': [{
-                    'version': 7.0,
+                    'version': '7.0',
                     'sections': [{
                         'title': 'Product CI',
                         'key': 'ps7'
