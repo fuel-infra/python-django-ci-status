@@ -32,13 +32,13 @@ def process_ldap_settings_dict(settings):
         'django_auth_ldap.backend.LDAPBackend',
     )
 
-    _LDAP_GROUP_SETTINGS = settings['_LDAP_GROUP_SETTINGS']
+    LDAP_GROUP_SETTINGS = settings['LDAP_GROUP_SETTINGS']
 
     settings['AUTH_LDAP_USER_FLAGS_BY_GROUP'] = {
-        'is_staff': _LDAP_GROUP_SETTINGS,
+        'is_staff': LDAP_GROUP_SETTINGS,
     }
 
-    settings['AUTH_LDAP_REQUIRE_GROUP'] = _LDAP_GROUP_SETTINGS
+    settings['AUTH_LDAP_REQUIRE_GROUP'] = LDAP_GROUP_SETTINGS
     settings['AUTH_LDAP_USER_ATTR_MAP'] = {
         'first_name': 'givenName',
         'last_name': 'sn',

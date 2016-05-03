@@ -1,5 +1,4 @@
-==================================
-Python Django CI Status Dashboard
-==================================
+README
+======
 
-Web application for CI system health and status tracking.
+Web application for CI systems health and status tracking.

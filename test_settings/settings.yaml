@@ -9,7 +9,7 @@ DATABASES:
     NAME: ci_dashboard_test
 
 AUTH_LDAP_SERVER_URI: 'ldap'
-_LDAP_GROUP_SETTINGS: 'cn=mirantis,ou=groups,o=mirantis,dc=mirantis,dc=net'
+LDAP_GROUP_SETTINGS: 'cn=mirantis,ou=groups,o=mirantis,dc=mirantis,dc=net'
 AUTH_LDAP_USER_DN_TEMPLATE: 'uid=%(user)s,ou=people,o=mirantis,dc=mirantis,dc=net'
 AUTH_LDAP_USERS_BASE_DN: 'ou=people,o=mirantis,dc=mirantis,dc=net'
 AUTH_LDAP_GROUP_CACHE_TIMEOUT: 3600

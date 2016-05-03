@@ -15,3 +15,9 @@ secrets.yml
 *.egg-info
 dist
 build
+
+
+# Doscs
+docs/*
+!conf.py
+!docs/*.rst
