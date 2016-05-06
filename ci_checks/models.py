@@ -335,8 +335,7 @@ class RuleCheck(models.Model):
         )
 
     class Meta:
-        ordering = ('-created_at',)
-        get_latest_by = 'created_at'
+        ordering = ('created_at', 'id')
 
     def __unicode__(self):
         text = '{status} (ci: "{ci}", rule: "{rule}")'

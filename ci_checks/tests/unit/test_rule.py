@@ -317,25 +317,19 @@ class RuleTests(TestCase):
         self.assertEqual(str(rule), rule.name)
 
     def test_created_with_valid_fields(self):
-        before = Rule.objects.count()
-        rule = Rule.objects.create(name='kil', ci_system=self.ci)
-
-        rule.full_clean()
-        self.assertEqual(Rule.objects.count(), before + 1)
+        Rule.objects.create(name='kil', ci_system=self.ci).full_clean()
 
     def test_not_created_without_required_fields(self):
-        rule = Rule()
-
         with self.assertRaises(ValidationError):
-            rule.full_clean()
+            Rule().full_clean()
 
     def test_name_must_be_uniq_together_with_type_and_ci(self):
-        first = Rule.objects.create(
+        """Allow same name only if type or ci are different"""
+        Rule.objects.create(
             name='first',
             rule_type=1,
             ci_system=self.ci,
         )
-        first.full_clean()
 
         second = Rule(
             name='first',
@@ -358,16 +352,12 @@ class RuleTests(TestCase):
         self.assertEqual(rule.rule_type, 1)
 
     def test_rule_types_are_predefined(self):
-        rule = Rule(
-            name='kilo',
-            rule_type=5,
-            ci_system=self.ci,
-        )
 
         with self.assertRaises(ValidationError):
-            rule.full_clean()
+            Rule(name='kilo', rule_type=5, ci_system=self.ci).full_clean()
 
     def test_check_rule_process_rules_by_types(self):
+        """Check that rule processed by own method depending on its type"""
         rule = Rule(
             name='kilo',
             rule_type=1,
@@ -402,6 +392,7 @@ class RuleTests(TestCase):
 
     @mock.patch.object(Rule, '_make_request')
     def test_get_jobs_list_for_view(self, _make_request_mock):
+        """Check that each view is just a collection of jobs assigned on it"""
         _make_request_mock.return_value = json.dumps(self.ONE_VIEW_JSON_RED)
         jobs = Rule.get_view_jobs('kilo', self.server)
 
@@ -410,7 +401,8 @@ class RuleTests(TestCase):
     @mock.patch.object(Jenkins, 'get_build_info')
     @mock.patch.object(Jenkins, 'get_job_info')
     def test_check_job_status(self, _get_job_mock, _get_build_mock):
-        rule = Rule(name='kilo', rule_type=1, ci_system=self.ci)
+        """Test new RuleCheck creation based on job check results"""
+        rule = Rule(name='kilo', ci_system=self.ci)
 
         _get_job_mock.return_value = self.JOB_INFO_LIST[0]
         _get_build_mock.return_value = self.BUILD_INFO_LIST[0]
@@ -451,6 +443,7 @@ class RuleTests(TestCase):
     def test_view_rule(
         self, _get_job_mock, _get_build_mock, _make_request_mock
     ):
+        """Test new RuleCheck creation based on job(type view) check results"""
         rule = Rule(name='kilo', rule_type=2, ci_system=self.ci)
 
         _make_request_mock.return_value = json.dumps(self.ONE_VIEW_JSON_RED)
@@ -480,7 +473,8 @@ class RuleTests(TestCase):
     @mock.patch.object(Jenkins, 'get_job_info')
     @mock.patch.object(Jenkins, 'get_build_info')
     def test_job_rule(self, _get_build_mock, _get_job_mock):
-        rule = Rule(name='kilo', rule_type=1, ci_system=self.ci)
+        """Test new RuleCheck creation based on job check results"""
+        rule = Rule(name='kilo', ci_system=self.ci)
 
         build_info = self.BUILD_INFO_LIST[0]
         _get_job_mock.return_value = self.JOB_INFO_LIST[1]
@@ -506,10 +500,10 @@ class RuleTests(TestCase):
         )
 
     def test_rule_type_has_text_representation(self):
-        rule = Rule(name='kilo', rule_type=1, ci_system=self.ci)
+        rule = Rule(name='kilo', ci_system=self.ci)
         self.assertEqual(rule.rule_type_text(), 'Job')
 
-        rule = Rule(name='kilo', rule_type=2, ci_system=self.ci)
+        rule = Rule(name='kilo2', rule_type=2, ci_system=self.ci)
         self.assertEqual(rule.rule_type_text(), 'View')
 
     @mock.patch.object(Jenkins, 'get_build_info')
@@ -519,6 +513,7 @@ class RuleTests(TestCase):
         _get_job_mock,
         _get_build_mock
     ):
+        """Test that new RuleCheck created each time when new build is ready"""
         rule = Rule.objects.create(name='swift', ci_system=self.ci)
 
         _get_job_mock.return_value = {

@@ -26,6 +26,26 @@ INVALID_SEED_FILE_PATH = os.path.join(
 
 
 class CiSystemTests(TestCase):
+    def make_ci_with_rulechecks(self, *rule_checks_statuses):
+        new_results = {}
+        ci = CiSystem.objects.create(
+            url=VALID_URL + str(len(rule_checks_statuses))
+        )
+
+        for status_type in rule_checks_statuses:
+            rule = ci.rule_set.create(
+                name='kilo_%s' % status_type,
+                is_active=True,
+            )
+            rule_check = RuleCheck(
+                rule=rule,
+                build_number=547,
+                status_type=status_type,
+            )
+
+            new_results[rule.unique_name] = rule_check
+
+        return ci, new_results
 
     def test_string_representation(self):
         ci = CiSystem(url=VALID_URL)
@@ -36,25 +56,17 @@ class CiSystemTests(TestCase):
         self.assertEqual(str(ci), name)
 
     def test_url_must_be_uniq(self):
-        first = CiSystem.objects.create(url=VALID_URL, name='1')
-        first.full_clean()
+        CiSystem.objects.create(url=VALID_URL, name='1')
 
-        second = CiSystem(url=VALID_URL, name='2')
         with self.assertRaises(ValidationError):
-            second.full_clean()
+            CiSystem(url=VALID_URL, name='2').full_clean()
 
     def test_created_with_valid_fields(self):
-        before = CiSystem.objects.count()
-        ci = CiSystem.objects.create(url=VALID_URL, name='1')
-
-        ci.full_clean()
-        self.assertEqual(CiSystem.objects.count(), before + 1)
+        CiSystem.objects.create(url=VALID_URL, name='1').full_clean()
 
     def test_not_created_without_required_fields(self):
-        ci = CiSystem()
-
         with self.assertRaises(ValidationError):
-            ci.full_clean()
+            CiSystem().full_clean()
 
     def test_valid_default_values(self):
         ci = CiSystem.objects.create(url=VALID_URL)
@@ -63,13 +75,8 @@ class CiSystemTests(TestCase):
         self.assertEqual(ci.password, '')
         self.assertEqual(ci.is_active, False)
 
-    def test_aware_of_its_rules(self):
-        ci = CiSystem.objects.create(url=VALID_URL)
-        rule = Rule.objects.create(name='test_job', ci_system=ci)
-
-        self.assertEqual(list(ci.rule_set.all()), [rule])
-
     def test_aware_of_latest_status(self):
+        """There is a special shortcut method to retrieve the latest status"""
         ci = CiSystem.objects.create(url=VALID_URL, name='1')
         ci.status_set.create(summary='Last')
 
@@ -80,6 +87,7 @@ class CiSystemTests(TestCase):
 
     @mock.patch.object(Rule, 'check_job_rule')
     def test_ci_status_calculated_by_single_rule(self, _job_mock):
+        """Test correct status assignment for CI with one rule"""
         ci = CiSystem.objects.create(url=VALID_URL)
 
         job_rule = ci.rule_set.create(
@@ -122,6 +130,7 @@ class CiSystemTests(TestCase):
         )
 
     def test_ci_status_checks_only_active_rules(self):
+        """Skip all the rules that are disabled for now"""
         ci = CiSystem.objects.create(url=VALID_URL)
         ci.rule_set.create(name='kilo')
 
@@ -136,6 +145,7 @@ class CiSystemTests(TestCase):
     def test_ci_status_skips_exceptional_rules(
         self, _check_rule_mock
     ):
+        """In case of errors during status check assign Skipped status on CI"""
         ci = CiSystem.objects.create(url=VALID_URL)
         ci.rule_set.create(name='kilo', is_active=True)
 
@@ -160,6 +170,7 @@ class CiSystemTests(TestCase):
     def test_ci_status_calculated_by_multiple_rules(self,
                                                     _job_mock,
                                                     _view_mock):
+        """Test correct status assignment for CI with many rules"""
         ci = CiSystem.objects.create(url=VALID_URL)
         job_rule = ci.rule_set.create(
             name='neutron',
@@ -231,6 +242,7 @@ class CiSystemTests(TestCase):
     @mock.patch.object(Rule, 'check_job_rule')
     def test_ci_doesnot_change_status_twice_but_tracks_rulechecks(self,
                                                                   _job_mock):
+        """Not changed status does not create new records in our system"""
         ci = CiSystem.objects.create(url=VALID_URL)
         before = (Status.objects.count(), RuleCheck.objects.count())
 
@@ -285,23 +297,22 @@ class CiSystemTests(TestCase):
 
     @mock.patch.object(Rule, 'check_job_rule')
     def test_ci_status_saves_all_rule_checks(self, _job_mock):
+        """Just check that we could analyse the status by its RuleChecks"""
         ci = CiSystem.objects.create(url=VALID_URL)
-        before = RuleCheck.objects.count()
 
         rule = ci.rule_set.create(
             name='kilo',
             is_active=True,
         )
-        rule_check = RuleCheck(
+        _job_mock.return_value = RuleCheck(
             rule=rule,
             build_number=547,
             status_type=constants.STATUS_SUCCESS,
         )
-        _job_mock.return_value = rule_check
+
         status = ci.check_the_status()
         last_rule_check = RuleCheck.objects.last()
 
-        self.assertEqual(RuleCheck.objects.count(), before + 1)
         self.assertEqual(last_rule_check.status.first(), status)
         self.assertEqual(last_rule_check.status_type, constants.STATUS_SUCCESS)
 
@@ -356,14 +367,16 @@ class CiSystemTests(TestCase):
         m.assert_called_once_with(VALID_URL)
 
     def test_could_be_marked_with_sticky_failure(self):
-        ci = CiSystem.objects.create(
-            url=VALID_URL, sticky_failure=True, name='1')
-        ci.full_clean()
+        CiSystem.objects.create(
+            url=VALID_URL, sticky_failure=True, name='1').full_clean()
 
     @mock.patch.object(Rule, 'check_job_rule')
     def test_sticky_failure_ci_fail_status_could_be_changed_only_manually(
         self, _job_mock
     ):
+        """In case CI has got the Fail status and it is sticky it could be
+           changed to Success only by person (manual mark).
+        """
         # success --> success
         ci = CiSystem.objects.create(url=VALID_URL, sticky_failure=True)
         Status.objects.create(summary='Success',
@@ -383,6 +396,7 @@ class CiSystemTests(TestCase):
 
         new_status = ci.check_the_status()
         self.assertEqual(new_status.status_type, constants.STATUS_SUCCESS)
+        # make sure that .check_the_status() returned a new status
         self.assertEqual(ci.status_set.count(), 2)
 
         # fail -x-> success
@@ -413,7 +427,7 @@ class CiSystemTests(TestCase):
             'could not be changed automatically.'
         )
 
-        # fail --> success for not product ci's
+        # fail --> success for not sticky ci
         ci = CiSystem.objects.create(url=VALID_URL + 'y', name='y')
         Status.objects.create(summary='Fail',
                               ci_system=ci,
@@ -437,93 +451,39 @@ class CiSystemTests(TestCase):
     def test_ci_status_assigned_by_severity(
         self, _new_rulechecks_results_mock
     ):
-        ci = CiSystem.objects.create(url=VALID_URL + '1', name='fail')
-        new_results = {}
-
-        for status_type in (
+        """New status type is assigned by the RuleChecks importance"""
+        ci, new_results = self.make_ci_with_rulechecks(
             constants.STATUS_SUCCESS, constants.STATUS_FAIL,
             constants.STATUS_SKIP, constants.STATUS_ABORTED
-        ):
-            rule = ci.rule_set.create(
-                name='kilo_%s' % status_type,
-                is_active=True,
-            )
-            rule_check = RuleCheck(
-                rule=rule,
-                build_number=547,
-                status_type=status_type,
-            )
-
-            new_results[rule.unique_name] = rule_check
-
+        )
         _new_rulechecks_results_mock.return_value = new_results
-        status = ci.check_the_status()
-        self.assertEqual(status.status_type, constants.STATUS_FAIL)
+        self.assertEqual(
+            ci.check_the_status().status_type, constants.STATUS_FAIL)
 
-        ci = CiSystem.objects.create(url=VALID_URL + '2', name='success')
-        new_results = {}
-
-        for status_type in (
+        ci, new_results = self.make_ci_with_rulechecks(
             constants.STATUS_SUCCESS, constants.STATUS_ABORTED,
             constants.STATUS_SKIP
-        ):
-            rule = ci.rule_set.create(
-                name='kilo_%s' % status_type,
-                is_active=True,
-            )
-            rule_check = RuleCheck(
-                rule=rule,
-                build_number=547,
-                status_type=status_type,
-            )
-
-            new_results[rule.unique_name] = rule_check
-
-        _new_rulechecks_results_mock.return_value = new_results
-        status = ci.check_the_status()
-        self.assertEqual(status.status_type, constants.STATUS_SUCCESS)
-
-        ci = CiSystem.objects.create(url=VALID_URL + '3', name='aborted')
-        new_results = {}
-
-        for status_type in (constants.STATUS_ABORTED, constants.STATUS_SKIP):
-            rule = ci.rule_set.create(
-                name='kilo_%s' % status_type,
-                is_active=True,
-            )
-            rule_check = RuleCheck(
-                rule=rule,
-                build_number=547,
-                status_type=status_type,
-            )
-
-            new_results[rule.unique_name] = rule_check
-
-        _new_rulechecks_results_mock.return_value = new_results
-        status = ci.check_the_status()
-        self.assertEqual(status.status_type, constants.STATUS_ABORTED)
-
-        ci = CiSystem.objects.create(url=VALID_URL + '4', name='skipped')
-        new_results = {}
-        rule = ci.rule_set.create(
-            name='kilo_%s' % constants.STATUS_SKIP,
-            is_active=True,
         )
-        rule_check = RuleCheck(
-            rule=rule,
-            build_number=547,
-            status_type=constants.STATUS_SKIP,
-        )
-
-        new_results[rule.unique_name] = rule_check
-
         _new_rulechecks_results_mock.return_value = new_results
-        status = ci.check_the_status()
-        self.assertEqual(status.status_type, constants.STATUS_SKIP)
+        self.assertEqual(
+            ci.check_the_status().status_type, constants.STATUS_SUCCESS)
+
+        ci, new_results = self.make_ci_with_rulechecks(
+            constants.STATUS_ABORTED, constants.STATUS_SKIP
+        )
+        _new_rulechecks_results_mock.return_value = new_results
+        self.assertEqual(
+            ci.check_the_status().status_type, constants.STATUS_ABORTED)
+
+        ci, new_results = self.make_ci_with_rulechecks(constants.STATUS_SKIP)
+        _new_rulechecks_results_mock.return_value = new_results
+        self.assertEqual(
+            ci.check_the_status().status_type, constants.STATUS_SKIP)
 
     @mock.patch.object(Rule, 'check_job_rule')
     def test_ci_uses_last_changed_timestamp_from_previous_status(self,
                                                                  _job_mock):
+        """If status was not changed keep it last_changed timestamp"""
         ci = CiSystem.objects.create(url=VALID_URL)
 
         rule = ci.rule_set.create(
@@ -589,6 +549,7 @@ class CiSystemTests(TestCase):
 
     @mock.patch.object(CiSystem, 'parse_seeds_file')
     def test_cis_creation_from_file_handles_duplicates(self, _seed_file_mock):
+        """Test import behaviour in case when two CI's have duplicate url"""
         _seed_file_mock.return_value = {
             'dashboards': {
                 'ci_systems': [{
@@ -632,6 +593,7 @@ class CiSystemTests(TestCase):
         )
 
     def test_could_create_rules_by_attributes_list(self):
+        """Helper method that creates Rules by imported data"""
         ci = CiSystem.objects.create(url=VALID_URL, name='1')
         rule = Rule.objects.create(
             name='test_job',
@@ -670,6 +632,7 @@ class CiSystemTests(TestCase):
 
     @mock.patch.object(CiSystem, 'parse_seeds_file')
     def test_cis_creation_with_rules_assigned(self, _seed_file_mock):
+        """Check correct rules assignment during the import"""
         _seed_file_mock.return_value = {
             'dashboards': {
                 'ci_systems': [{
@@ -702,17 +665,17 @@ class CiSystemTests(TestCase):
         )
 
     def test_deactivate_previous_cis(self):
+        """Check deactivation method for CI's"""
         previous = {'http://1.com/', 'http://2.com/', 'http://3.com/'}
         for name in previous:
             CiSystem.objects.create(url=name, name=name, is_active=True)
-
-        self.assertEqual(CiSystem.objects.filter(is_active=True).count(), 3)
 
         new = {'http://4.com/', 'http://1.com/', 'http://5.com/'}
         CiSystem.deactivate_previous_cis(previous, new)
         self.assertEqual(CiSystem.objects.filter(is_active=True).count(), 1)
 
     def test_deactivate_previous_rules(self):
+        """Check deactivation method for CI rules"""
         ci = CiSystem.objects.create(url=VALID_URL, is_active=True)
 
         for name in '123':
@@ -724,7 +687,6 @@ class CiSystemTests(TestCase):
         previous = set(
             Rule.objects.filter(is_active=True).values_list('id', flat=True)
         )
-        self.assertEqual(len(previous), 3)
 
         CiSystem.deactivate_previous_rules(
             previous, {'x10', Rule.objects.first().id, 'x5'}
@@ -732,6 +694,7 @@ class CiSystemTests(TestCase):
         self.assertEqual(Rule.objects.filter(is_active=True).count(), 1)
 
     def test_parse_seeds_from_stream(self):
+        """Test import from file upload steam"""
         with open(INVALID_SEED_FILE_PATH) as f:
             self.assertIsNone(CiSystem.parse_seeds_from_stream(f.read()))
 
@@ -741,6 +704,7 @@ class CiSystemTests(TestCase):
             self.assertTrue('dashboards' in seeds)
 
     def test_find_rules_for_product(self):
+        """Test for method that searches Rules objects by its attributes"""
         cis_names = '123'
         for name in cis_names:
             ci = CiSystem.objects.create(
@@ -791,6 +755,7 @@ class CiSystemTests(TestCase):
         self.assertEqual(len(rules), 3)  # all good
 
     def test_create_rule_for_ci_with_existent_rules(self):
+        """Check that rules are reused if exists"""
         rule_names = '123'
         ci = CiSystem.objects.create(
             url=VALID_URL,
@@ -818,9 +783,10 @@ class CiSystemTests(TestCase):
 
         self.assertFalse(error)
         self.assertEqual(len(rules), 3)
-        self.assertEqual(Rule.objects.count(), before)
+        self.assertEqual(Rule.objects.count(), before)  # no new ones
 
     def test_create_rule_for_ci_with_mixed_rules(self):
+        """Check that rules are reused if exists and created otherwise"""
         rule_names = '12'
         ci = CiSystem.objects.create(
             url=VALID_URL,
@@ -848,9 +814,10 @@ class CiSystemTests(TestCase):
 
         self.assertFalse(error)
         self.assertEqual(len(rules), 3)
-        self.assertEqual(Rule.objects.count(), before + 1)
+        self.assertEqual(Rule.objects.count(), before + 1)  # only one created
 
     def test_create_rule_for_ci_with_wrong_rules(self):
+        """Error occurs if we try to create new rule by wrong attributes"""
         rule_names = '12'
         ci = CiSystem.objects.create(
             url=VALID_URL,
@@ -888,6 +855,7 @@ class CiSystemTests(TestCase):
         self.assertEqual(Rule.objects.count(), before)
 
     def test_create_rule_for_ci_deactivate_previous_rules(self):
+        """To keep the history we deactivate all previous unused rules"""
         rule_names = '12'
         ci = CiSystem.objects.create(
             url=VALID_URL,
@@ -902,7 +870,7 @@ class CiSystemTests(TestCase):
             )
 
         before = Rule.objects.filter(is_active=True).count()
-        self.assertEqual(before, 2)
+
         rules, error = CiSystem.create_rule_for_ci([{
             'name': 'rule_1',
             'version': '1',
@@ -938,6 +906,7 @@ class CiSystemTests(TestCase):
         self.assertTrue('not follow json schema' in result['errors'][0])
 
     def test_create_from_seeds_with_valid_unexistent_cis_with_one_rule(self):
+        """Import behaviour for new CI with one rule assigned"""
         before = CiSystem.objects.count()
         seeds = {
             'dashboards': {
@@ -973,6 +942,7 @@ class CiSystemTests(TestCase):
         self.assertEqual(CiSystem.objects.count(), before + 1)
 
     def test_create_from_seeds_import_rule_correctly(self):
+        """Rules are imported with all the parameters and attributes"""
         before = CiSystem.objects.count()
         seeds = {
             'dashboards': {
@@ -1022,6 +992,7 @@ class CiSystemTests(TestCase):
         self.assertEqual(rule.ci_system, CiSystem.objects.first())
 
     def test_create_from_seeds_import_multiple_complex_rules(self):
+        """Rules under one section share its properties and parameters"""
         before = Rule.objects.count()
         seeds = {
             'dashboards': {
@@ -1082,6 +1053,7 @@ class CiSystemTests(TestCase):
         self.assertEqual(rule3.ci_system, CiSystem.objects.first())
 
     def test_create_from_seeds_with_valid_unexistent_cis_without_rules(self):
+        """New CI import without rules at all"""
         before = CiSystem.objects.count()
         seeds = {
             'dashboards': {
@@ -1142,6 +1114,7 @@ class CiSystemTests(TestCase):
         self.assertEqual(CiSystem.objects.count(), before + 2)
 
     def test_create_from_seeds_with_valid_existent_cis_without_rules(self):
+        """Existent CI reimport without rules at all"""
         CiSystem.objects.create(
             name='Product CI',
             url='https://product-ci.infra.abc.net/',
@@ -1173,6 +1146,7 @@ class CiSystemTests(TestCase):
         self.assertEqual(CiSystem.objects.count(), before + 1)
 
     def test_create_from_seeds_deactivates_old_cis(self):
+        """All unused CI's are deactivated during import to keep the history"""
         CiSystem.objects.create(
             name='Product CI',
             url='https://product-ci.infra.abc.net/',
@@ -1209,6 +1183,7 @@ class CiSystemTests(TestCase):
         self.assertEqual(CiSystem.objects.filter(is_active=True).count(), 1)
 
     def test_create_from_seeds_handles_errors(self):
+        """Invalid url and other errors are tracked by the import"""
         CiSystem.objects.create(
             name='Product CI',
             url='https://product-ci.infra.abc.net/',
@@ -1234,14 +1209,16 @@ class CiSystemTests(TestCase):
                 }]
             }
         }
+
         result = CiSystem.create_from_seeds(seeds)
+
         self.assertEqual(result['cis_total'], 1)
         self.assertEqual(result['cis_imported'], 0)
         self.assertTrue('Enter a valid URL.', ''.join(result['errors']))
-
         self.assertEqual(CiSystem.objects.count(), before)
 
     def test_create_from_seeds_cis_with_invalid_rules(self):
+        """Import configuration files are checked against JSON schema"""
         seeds = {
             'dashboards': {
                 'ci_systems': [{
@@ -1262,12 +1239,14 @@ class CiSystemTests(TestCase):
         }
 
         result = CiSystem.create_from_seeds(seeds)
+
         self.assertEqual(len(result['objects']), 0)
         self.assertEqual(result['cis_total'], 0)
         self.assertEqual(result['cis_imported'], 0)
         self.assertTrue('not follow json schema' in ''.join(result['errors']))
 
     def test_create_from_seeds_cis_updates_existent_cis(self):
+        """Import for existent CI updates its attributes if any was changed"""
         CiSystem.objects.create(
             name='Product CI',
             url='https://product.abc.net/',
@@ -1310,6 +1289,7 @@ class CiSystemTests(TestCase):
         self.assertEqual(ci.rule_set.filter(is_active=True).count(), 1)
 
     def test_create_from_seeds_with_valid_unexistent_psis_without_rules(self):
+        """Import for new ProductStatus without rules"""
         before = ProductCi.objects.count()
 
         seeds = {
@@ -1355,6 +1335,7 @@ class CiSystemTests(TestCase):
         self.assertEqual(ProductCi.objects.count(), before + 1)
 
     def test_create_from_seeds_with_invalid_psis_without_rules(self):
+        """Import for new ProductStatus invalid without rules"""
         before = ProductCi.objects.count()
 
         seeds = {
@@ -1377,12 +1358,14 @@ class CiSystemTests(TestCase):
         }
 
         result = CiSystem.create_from_seeds(seeds)
+
         self.assertEqual(result['ps_total'], 0)
         self.assertEqual(result['ps_imported'], 0)
         self.assertTrue('not follow json schema' in result['errors'][0])
         self.assertEqual(ProductCi.objects.count(), before)
 
     def test_create_from_seeds_with_valid_existent_psis_without_rules(self):
+        """Import for existent ProductStatus without rules"""
         ProductCi.objects.create(name='Product CI', version='7.0')
 
         seeds = {
@@ -1406,6 +1389,7 @@ class CiSystemTests(TestCase):
         }
 
         result = CiSystem.create_from_seeds(seeds)
+
         self.assertEqual(len(result['objects']), 2)
         self.assertEqual(result['ps_total'], 1)
         self.assertEqual(result['ps_imported'], 1)
@@ -1413,6 +1397,7 @@ class CiSystemTests(TestCase):
         self.assertEqual(ProductCi.objects.count(), 1)
 
     def test_create_from_seeds_deactivates_old_psis(self):
+        """All previous unused Product's deactivated to keep the history"""
         ProductCi.objects.create(name='Product CI', is_active=True)
 
         seeds = {
@@ -1444,6 +1429,7 @@ class CiSystemTests(TestCase):
         self.assertEqual(active_prods.first().name, 'Product CI2')
 
     def test_create_from_seeds_psis_handles_errors(self):
+        """Error in Product's sections are catched"""
         ProductCi.objects.create(name='Product CI')
 
         seeds = {
@@ -1477,6 +1463,7 @@ class CiSystemTests(TestCase):
         self.assertEqual(ProductCi.objects.count(), 1)
 
     def test_create_from_seeds_psis_with_valid_rule(self):
+        """New Product import with one rule"""
         seeds = {
             'dashboards': {
                 'products': [{
@@ -1510,6 +1497,7 @@ class CiSystemTests(TestCase):
         self.assertEqual(rule.name, '8.0.test_all')
 
     def test_create_from_seeds_psis_with_valid_multiple_rules(self):
+        """New Product import with multiply rules that shares properties"""
         seeds = {
             'dashboards': {
                 'products': [{
@@ -1542,6 +1530,7 @@ class CiSystemTests(TestCase):
         self.assertEqual(Rule.objects.count(), 3)
 
     def test_create_from_seeds_psis_with_invalid_rules(self):
+        """Rules sections are checked against JSON schema"""
         seeds = {
             'dashboards': {
                 'products': [{
@@ -1574,6 +1563,7 @@ class CiSystemTests(TestCase):
         self.assertTrue('not follow json schema' in ''.join(result['errors']))
 
     def test_create_from_seeds_psis_updates_existent_psis_rules(self):
+        """Reimport of existent Product updates the rules assigned to it"""
         # create a ProductCi with one rule
         ci = CiSystem.objects.create(name='Fuel')
         ci.rule_set.create(
@@ -1589,7 +1579,6 @@ class CiSystemTests(TestCase):
 
         previous = ProductCi.objects.create(name='Product CI', version='7.0')
         previous.rules.add(Rule.objects.first())
-        self.assertEqual(previous.rules.count(), 1)
 
         # import same ProductCi with another rule
         seeds = {
@@ -1616,7 +1605,7 @@ class CiSystemTests(TestCase):
         }
         CiSystem.create_from_seeds(seeds)
 
-        self.assertEqual(ProductCi.objects.count(), 1)
+        self.assertEqual(ProductCi.objects.count(), 1)  # still one, no new
         product = ProductCi.objects.first()
 
         self.assertEqual(product.rules.count(), 1)
@@ -1646,7 +1635,7 @@ class CiSystemTests(TestCase):
         }
         CiSystem.create_from_seeds(seeds)
 
-        self.assertEqual(ProductCi.objects.count(), 1)
+        self.assertEqual(ProductCi.objects.count(), 1)  # stil one, no new
         self.assertEqual(product.rules.count(), 2)
 
         seeds = {
@@ -1673,4 +1662,4 @@ class CiSystemTests(TestCase):
         }
         CiSystem.create_from_seeds(seeds)
 
-        self.assertEqual(product.rules.count(), 0)
+        self.assertEqual(product.rules.count(), 0)  # have lost its rules

@@ -28,4 +28,4 @@ def _update_product_cis():
     products = ProductCi.objects.filter(is_active=True)
 
     for pci in products:
-        pci.update_status()
+        pci.set_status()

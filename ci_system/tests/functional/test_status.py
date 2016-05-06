@@ -12,10 +12,6 @@ class StatusFunctionalTests(TestCase):
         self.user = User.objects.create_superuser(
             'tempo', 'temporary@gmail.com', 'tempo')
 
-    def tearDown(self):
-        self.ci.delete()
-        self.user.delete()
-
     def test_new_status_author_defaults_to_auth_user(self):
         short_summary = 'new status'
         self.client.login(

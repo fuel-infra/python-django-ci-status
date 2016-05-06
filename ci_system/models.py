@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.db import models, IntegrityError
-from django.db.models.signals import pre_delete
+from django.db.models.signals import pre_delete, pre_save
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.timesince import timesince
@@ -18,7 +18,7 @@ from jenkins import Jenkins, JenkinsException
 
 from ci_system import constants
 
-from ci_checks.models import Rule, RuleCheck, RuleException
+from ci_checks.models import Rule, RuleException
 
 LOGGER = logging.getLogger(__name__)
 
@@ -36,16 +36,11 @@ class CiSystem(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name if self.name else self.url
 
     def latest_status(self):
-        try:
-            status = self.status_set.latest()
-        except Status.DoesNotExist:
-            status = None
-
-        return status
+        return self.status_set.last()
 
     def _new_rulechecks_results(self):
         new_results = {}
@@ -648,63 +643,59 @@ class ProductCi(models.Model):
     def __unicode__(self):
         return self.name
 
-    def update_status(self):
-        self.set_status(self.rules.filter(is_active=True))
-
-    def set_status(self, rules):
-        previous_status = None
-        checks = []
-
-        for rule in rules:
-            try:
-                check = rule.rulecheck_set.latest()
-                checks.append(check)
-            except RuleCheck.DoesNotExist:
-                pass
+    def set_status(self, rules=None, summary=None):
+        checks = self._latest_checks_for_rules(
+            rules or self.rules.filter(is_active=True)
+        )
 
         if checks:
+            default_summary = 'Assigned automaticaly by a periodic task'
             status_type = self._get_status_for_checks(checks)
 
-            try:
-                previous_status = self.productcistatus_set.latest()
-            except ProductCiStatus.DoesNotExist:
-                pass
+            if self._should_change_status(status_type):
+                self.productcistatus_set.create(
+                    summary=summary or default_summary,
+                    status_type=status_type,
+                )
 
-            if previous_status and (
-                    status_type == previous_status.status_type or
-                    status_type == constants.STATUS_IN_PROGRESS):
-                return
+    def _should_change_status(self, new_status_type):
+        previous_status = self.productcistatus_set.last()
 
-            ProductCiStatus.objects.create(
-                product_ci=self,
-                summary='Assigned automaticaly by a periodic task',
-                status_type=status_type,
-                version=self.version,
-                last_changed_at=timezone.now()
-            )
+        if previous_status and (
+            new_status_type == constants.STATUS_IN_PROGRESS or
+            new_status_type == previous_status.status_type
+        ):
+            return False
+
+        return True
+
+    def _latest_checks_for_rules(self, rules):
+        checks = []
+        for rule in rules:
+            check = rule.rulecheck_set.last()
+            if check:
+                checks.append(check)
+
+        return checks
 
     def latest_rule_checks(self):
         checks = []
 
         for rule in self.rules.filter(is_active=True):
-            try:
-                check = rule.rulecheck_set.latest()
+            check = rule.rulecheck_set.last()
+            if check:
                 checks.append(check)
-            except RuleCheck.DoesNotExist:
-                pass
 
         return checks
 
-    def all_statuses(self):
-        return [rule_check.status for rule_check in self.latest_rule_checks()]
-
-    def active_status_time(self, version):
+    def active_status_time(self, version=None):
         if version:
-            try:
-                status = self.productcistatus_set.filter(
-                    version=version).latest()
+            status = self.productcistatus_set.filter(
+                version=version
+            ).last()
+            if status:
                 return timesince(status.last_changed_at)
-            except ProductCiStatus.DoesNotExist:
+            else:
                 return None
         else:
             status = self.current_status()
@@ -712,12 +703,7 @@ class ProductCi(models.Model):
                 return timesince(status.last_changed_at)
 
     def current_status(self):
-        try:
-            status = self.productcistatus_set.latest()
-        except ProductCiStatus.DoesNotExist:
-            status = None
-
-        return status
+        return self.productcistatus_set.last()
 
     def _get_status_for_checks(self, checks):
         statuses = [check.status_type for check in checks]
@@ -734,14 +720,13 @@ class ProductCi(models.Model):
             return constants.STATUS_SKIP
 
     def current_status_type(self):
-        try:
-            return self.productcistatus_set.latest().status_type
-        except ProductCiStatus.DoesNotExist:
-            return constants.STATUS_SKIP
+        status = self.current_status()
+        if status:
+            return status.status_type
+        return constants.STATUS_SKIP
 
     def current_status_text(self):
-        status = self.current_status()
-        return Status.text_for_type(status)
+        return Status.text_for_type(self.current_status_type())
 
     @classmethod
     def deactivate_previous_products(cls, old_names, new_names):
@@ -780,20 +765,10 @@ class AbstractStatus(models.Model):
 
     class Meta:
         abstract = True
-        ordering = ('-created_at',)
-        get_latest_by = 'created_at'
+        ordering = ('created_at', 'id')
 
-    def __str__(self):
-        text = self.text_for_type(self.status_type)
-
-        try:
-            ci = self.ci_system
-        except AttributeError:
-            ci = self.product_ci
-
-        return '{status} (ci: "{ci}")'.format(
-            status=text,
-            ci=ci)
+    def __unicode__(self):
+        return self.text_for_type(self.status_type)
 
     def status_text(self):
         return self.text_for_type(self.status_type)
@@ -826,6 +801,11 @@ class AbstractStatus(models.Model):
 class Status(AbstractStatus):
 
     ci_system = models.ForeignKey(CiSystem, on_delete=models.CASCADE)
+
+    def __unicode__(self):
+        return '{status} (ci: "{ci}")'.format(
+            status=super(Status, self).__unicode__(),
+            ci=self.ci_system)
 
     def get_absolute_url(self):
         return reverse('status_detail', kwargs={'pk': self.pk})
@@ -863,5 +843,17 @@ class ProductCiStatus(AbstractStatus):
     product_ci = models.ForeignKey(ProductCi, on_delete=models.CASCADE)
     version = models.CharField(max_length=255, default='')
 
+    def __unicode__(self):
+        return '{status} (product: "{ci}")'.format(
+            status=super(ProductCiStatus, self).__unicode__(),
+            ci=self.product_ci)
+
     def get_absolute_url(self):
         return reverse('product_ci_status_detail', kwargs={'pk': self.pk})
+
+    @staticmethod
+    def set_version(sender, instance, **kwargs):
+        if not instance.version:
+            instance.version = instance.product_ci.version
+
+pre_save.connect(ProductCiStatus.set_version, sender=ProductCiStatus)
