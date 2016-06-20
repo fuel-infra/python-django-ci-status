@@ -33,8 +33,15 @@ class CustomInstall(install):
 setup(
     name='python-django-ci_status',
     version='0.0.1',
-    packages=find_packages(),
-    include_package_data=True,
+    packages=find_packages(exclude=['ci_dashboard.tests', 'ci_dashboard.tests.*']),
+    package_data={
+        'ci_dashboard': [
+            'templates/*.html',
+            'templates/ci_dashboard/*.html',
+            'static/ci_dashboard/javascripts/*.min.js',
+            'static/ci_dashboard/stylesheets/*.min.css',
+        ]
+    },
     cmdclass={'install': CustomInstall},
     license='Apache License 2.0',
     description='Web application for CI system health and status tracking.',

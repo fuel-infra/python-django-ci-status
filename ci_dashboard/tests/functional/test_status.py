@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import Client, TestCase
 
-from ci_system.models import CiSystem, Status
+from ci_dashboard.models import CiSystem, Status
 
 
 class StatusFunctionalTests(TestCase):
@@ -14,8 +14,7 @@ class StatusFunctionalTests(TestCase):
 
     def test_new_status_author_defaults_to_auth_user(self):
         short_summary = 'new status'
-        self.client.login(
-            username=self.user.username, password='tempo')
+        self.client.login(username=self.user.username, password='tempo')
 
         self.client.get('/')
 
@@ -40,5 +39,4 @@ class StatusFunctionalTests(TestCase):
             'ci_system': self.ci.pk,
             'status_type': 1
         })
-
-        self.assertGreaterEqual(response.content.find('Please log in'), 0)
+        self.assertRedirects(response, reverse('admin:login') + '?next=' + reverse('status_new'))

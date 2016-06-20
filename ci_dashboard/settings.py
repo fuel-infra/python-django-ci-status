@@ -39,13 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'ci_system',
     'ci_dashboard',
-    'ci_checks',
-
-    'api',
-
-    'south',
 ]
 
 MESSAGE_TAGS = {
@@ -129,6 +123,10 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'DEBUG',
         },
+        'ci_dashboard': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
     },
 }
 
@@ -145,7 +143,6 @@ STAFF_GROUPS = ('ci', 'devops-all')
 
 
 def _load_schema(path):
-    print 'load', path
     try:
         with open(path) as f:
             return json.loads(f.read())

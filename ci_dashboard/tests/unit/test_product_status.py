@@ -1,9 +1,9 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
-from ci_system import constants
-from ci_system.models import CiSystem, ProductCi, ProductCiStatus
-from ci_checks.models import RuleCheck
+from ci_dashboard import constants
+from ci_dashboard.models import CiSystem, ProductCi, ProductCiStatus
+from ci_dashboard.models import RuleCheck
 
 
 VALID_URL = 'http://localhost/'

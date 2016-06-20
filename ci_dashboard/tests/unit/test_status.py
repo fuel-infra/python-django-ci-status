@@ -2,14 +2,14 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.test import TestCase
 
-from ci_system.constants import (
+from ci_dashboard.constants import (
     STATUS_TYPE_CHOICES,
     STATUS_SUCCESS,
     STATUS_FAIL,
     STATUS_SKIP,
 )
-from ci_system.models import CiSystem, Status
-from ci_checks.models import Rule, RuleCheck
+from ci_dashboard.models import CiSystem, Status
+from ci_dashboard.models import Rule, RuleCheck
 
 
 class StatusTests(TestCase):

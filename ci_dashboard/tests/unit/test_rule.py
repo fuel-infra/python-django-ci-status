@@ -6,8 +6,8 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from jenkins import Jenkins
 
-from ci_system.models import CiSystem
-from ci_checks.models import Rule, RuleCheck, RuleException
+from ci_dashboard.models import CiSystem
+from ci_dashboard.models import Rule, RuleCheck, RuleException
 
 
 class RuleTests(TestCase):

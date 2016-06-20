@@ -5,9 +5,9 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from jenkins import Jenkins, JenkinsException
 
-from ci_system import constants
-from ci_system.models import CiSystem, ProductCi, Status
-from ci_checks.models import Rule, RuleCheck, RuleException
+from ci_dashboard import constants
+from ci_dashboard.models import CiSystem, ProductCi, Status
+from ci_dashboard.models import Rule, RuleCheck, RuleException
 
 
 VALID_URL = 'http://localhost/'

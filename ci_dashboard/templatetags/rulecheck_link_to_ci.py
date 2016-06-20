@@ -1,6 +1,6 @@
 from django import template
 
-from ci_system import constants
+from ci_dashboard import constants
 
 
 register = template.Library()

@@ -1,9 +1,9 @@
 from django import template
 from django.conf import settings
 
-from ci_system import constants
+from ci_dashboard import constants
 
-from ci_system.models import Status
+from ci_dashboard.models import Status
 
 
 register = template.Library()

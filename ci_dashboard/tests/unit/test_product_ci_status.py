@@ -1,8 +1,8 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
-from ci_system import constants
-from ci_system.models import ProductCi, ProductCiStatus
+from ci_dashboard import constants
+from ci_dashboard.models import ProductCi, ProductCiStatus
 
 
 class ProductCiStatusTests(TestCase):

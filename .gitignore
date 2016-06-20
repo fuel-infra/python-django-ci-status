@@ -8,7 +8,7 @@ celerybeat-schedule
 secrets.yml
 /settings.yaml
 .coverage
-
+.idea/
 
 # Packages
 *.egg

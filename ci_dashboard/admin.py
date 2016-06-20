@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from ci_checks.models import Rule, RuleCheck
+from ci_dashboard.models import Rule, RuleCheck, CiSystem, ProductCi, Status, ProductCiStatus
 
 
 class RuleAdmin(admin.ModelAdmin):
@@ -27,3 +27,4 @@ class RuleAdmin(admin.ModelAdmin):
 
 admin.site.register(RuleCheck)
 admin.site.register(Rule, RuleAdmin)
+admin.site.register([CiSystem, ProductCi, Status, ProductCiStatus])
