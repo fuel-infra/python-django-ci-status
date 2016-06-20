@@ -144,6 +144,13 @@ Full-featured import file looks like this::
 
 .. _import_by_web_request:
 
+Configure using command line
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There is a custom command to ``ci-status`` to update config from configurations file:
+
+  $ ci-status import_config config.yaml
+
 Import By Web Request
 ^^^^^^^^^^^^^^^^^^^^^
 

@@ -36,10 +36,29 @@ setup(
     packages=find_packages(exclude=['ci_dashboard.tests', 'ci_dashboard.tests.*']),
     package_data={
         'ci_dashboard': [
+            'schema.json',
             'templates/*.html',
             'templates/ci_dashboard/*.html',
             'static/ci_dashboard/javascripts/*.min.js',
             'static/ci_dashboard/stylesheets/*.min.css',
+        ]
+    },
+    data_files=[
+        ('/etc/ci-status', ['config/settings.yaml']),
+        ('/usr/share/ci-status/static/javascripts', [
+            'ci_dashboard/static/ci_dashboard/javascripts/application.min.js',
+            'ci_dashboard/static/ci_dashboard/javascripts/bootstrap.min.js',
+        ]),
+        ('/usr/share/ci-status/static/stylesheets', [
+            'ci_dashboard/static/ci_dashboard/stylesheets/application.min.css',
+        ]),
+        ('/usr/share/ci-status', [
+            'ci_dashboard/schema.json'
+        ]),
+    ],
+    entry_points={
+        'console_scripts': [
+            'ci-status=ci_dashboard.management.cli:main'
         ]
     },
     cmdclass={'install': CustomInstall},

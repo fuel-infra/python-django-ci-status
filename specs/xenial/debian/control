@@ -1,5 +1,5 @@
 Source: python-django-ci-status
-Maintainer: Aliaksandr Buhayeu <abuhayeu@mirantis.com>
+Maintainer: Alexander Charykov <acharykov@mirantis.com>
 Section: python
 Priority: optional
 Build-Depends: ca-certificates,
@@ -16,6 +16,7 @@ Package: python-django-ci-status
 Architecture: all
 Depends: python-amqp,
          python-celery,
+         python-celery-common,
          python-django,
          python-django-auth-ldap,
          python-django-south,
@@ -32,3 +33,15 @@ Description: Web application for CI system health and status tracking.
  .
  Web application for CI system health and status tracking.
  .
+
+Package: python-django-ci-status-uwsgi-nginx
+Section: extra
+Priority: optional
+Architecture: all
+Depends: nginx, nginx-full, python-django-ci-status, uwsgi, uwsgi-plugin-python, ca-certificates
+Description: CI-status uwsgi+nginx configuration
+ ==================================
+ Python Django CI Status Dashboard
+ ==================================
+ .
+ Web application for CI system health and status tracking.

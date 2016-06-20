@@ -651,11 +651,13 @@ class CiSystem(models.Model):
             try:
                 jsonschema.validate(seeds, settings.JSON_SCHEMA)
             except jsonschema.ValidationError as exc:
+                # TODO: reraise own exception
                 msg = 'Import file does not follow json schema: %s' % exc
                 LOGGER.error(msg)
                 result['errors'].append(msg)
                 return result
         else:
+            # TODO: reraise own exception
             msg = ('Something went wrong with schema.json validation. '
                    'Please contact the administrator.')
             LOGGER.error(msg)

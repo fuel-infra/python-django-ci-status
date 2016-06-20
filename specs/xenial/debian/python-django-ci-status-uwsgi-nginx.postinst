@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -e
+
+if ! id ci-status >/dev/null 2>&1; then
+    useradd ci-status -s /bin/false -m -r -d /var/lib/ci-status
+fi
+
+if [ ! -d /var/lib/ci-status ]; then
+    mkdir /var/lib/ci-status
+    chown ci-status:ci-status /var/lib/ci-status
+fi

@@ -1,0 +1,11 @@
+uwsgi:
+  plugins: python
+  env: DJANGO_SETTINGS_MODULE=ci_dashboard.settings
+  module: ci_dashboard.wsgi:application
+  master: True
+  processes: 5
+  socket: 127.0.0.1:6776
+  vacuum: True
+  die-on-term: true
+  uid: ci-status
+  gid: ci-status

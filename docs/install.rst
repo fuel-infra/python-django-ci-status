@@ -4,44 +4,39 @@ Install
 This section describes steps required for initial server preparation in order
 to deploy ``CI Dashboard`` application.
 
-All the configurations are done and tested on fresh installed ``Ubuntu 14.04 LTS (trusty)``.
+All the configurations are done and tested on fresh installed ``Ubuntu 16.04 LTS (xenial)``.
 
-1. Update & updade the system to retrive the fresh packages versions:
+1. Update & upgrade the system to retrieve the fresh packages versions:
     ::
 
         $ sudo apt-get update
         $ sudo apt-get upgrade -y
 
-2. Install ``MySQL`` database. During the installation process, you will be
+2. Install ``MySQL`` database and python bindings. During the installation process, you will be
     prompted to set a password for the MySQL root user. Keep it for future reference:
     ::
 
-        $ sudo apt-get install -y mysql-server
+        $ sudo apt-get install -y mysql-server python-pymysql
+
 
 3. Create a new user and database:
     ::
 
-        $ mysql -u root -p # enter the root password that was set during the MySQL installation
+        $ mysql -u root -p  # enter the root password that was set during the MySQL installation
         mysql> create database ci_dashboard_prod;
-        mysql> create user 'dashboard'@'localhost' identified by 'pass123';  # remember the password
-        mysql> grant all on ci_dashboard_prod.* to 'dashboard';
+        mysql> create user 'dashboard'@'localhost' identified by 'pass123';
+        mysql> grant all on ci_dashboard_prod.* to 'dashboard'@'localhost';
         mysql> exit
 
-4. Install required project dependencies
+4. Install the lattest ``CI Dashboard`` version.
     ::
 
-        $ sudo apt-get install -y python-django python-jenkins python-django-south python-ldap python-django-auth-ldap python-mysqldb python-amqp python-celery python-jsonschema rabbitmq-server
+        $ apt-get install -y python-django-ci-status
 
-5. Download and install the lattest ``CI Dashboard`` version.
-    Project ``fuel-infra/packages/python-django-ci-status``:
+5. Set settings config for application and place it at ``/etc/ci-status/`` path:
     ::
 
-        $ sudo dpkg -i python-django-ci-status_0.0.1+git14-ga4ecf08_all.deb  # example, version might differ
-
-6. Set settings config for application and place it at ``/etc/ci_status/`` path:
-    ::
-
-        $ cat /etc/ci_status/settings.yaml
+        $ cat /etc/ci-status/settings.yaml
 
         DEBUG: False
         TEMPLATE_DEBUG: False
@@ -81,20 +76,23 @@ All the configurations are done and tested on fresh installed ``Ubuntu 14.04 LTS
               crontab:
                 minute: '*/10'
 
-7. Run the application:
+6. Run the application:
     ::
 
-        $ cd /usr/lib/python2.7/dist-packages/
-        $ export DJANGO_SETTINGS_MODULE=ci_dashboard.settings
-        $ django-admin syncdb # setup superuser here
-        $ django-admin migrate
-        $ django-admin staff_group
-        $ django-admin runserver 127.0.0.1:8080
+        $ ci-status migrate
+        $ ci-status staff_group
+        $ ci-status import_config config.yaml  # only if you have configuration
+        $ ci-status update
+        $ ci-status runserver 127.0.0.1:8080
+
+7. Install ``RabbitMQ`` server as a transport for celery tasks and celery itself:
+    ::
+
+         $ sudo apt-get install -y rabbitmq-server celery-common
 
 8. Run the background scheduller:
     ::
 
-        $ cd ~/ # or any folder with write access for simple user
         $ celery -A ci_dashboard worker -B -l info
 
 You are done! :)

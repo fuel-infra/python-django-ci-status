@@ -154,10 +154,10 @@ def _load_schema(path):
     return None
 
 SCHEMA_PATH = os.path.join(os.path.dirname(__file__), 'schema.json')
-DEFAULT_SCHEMA_PATH = '/usr/share/python-django-ci-status/schema.json'
+DEFAULT_SCHEMA_PATH = '/usr/share/ci-status/schema.json'
 
 JSON_SCHEMA = _load_schema(
     SCHEMA_PATH if os.path.exists(SCHEMA_PATH) else DEFAULT_SCHEMA_PATH
 )
 
-site_settings.update_settings(globals(), 'CI_STATUS', '.:/etc/ci_status')
+site_settings.update_settings(globals(), 'CI_STATUS', '.:/etc/ci-status')

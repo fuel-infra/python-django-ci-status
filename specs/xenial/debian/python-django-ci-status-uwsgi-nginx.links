@@ -1,0 +1,2 @@
+/etc/nginx/sites-available/ci-status.conf /etc/nginx/sites-enabled/ci-status.conf
+/etc/uwsgi/apps-available/ci-status.yaml /etc/uwsgi/apps-enabled/ci-status.yaml
