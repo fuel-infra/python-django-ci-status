@@ -3,9 +3,7 @@ from __future__ import absolute_import
 import logging
 from celery import shared_task
 
-from ci_system.models import CiSystem, ProductCi
-from ci_dashboard.models import update_last_sync_timestamp
-
+from ci_dashboard.models import CiSystem, ProductCi, update_last_sync_timestamp
 
 LOGGER = logging.getLogger(__name__)
 
