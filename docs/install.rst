@@ -77,13 +77,44 @@ All the configurations are done and tested on fresh installed ``Ubuntu 16.04 LTS
                 minute: '*/10'
 
 6. Run the application:
-    ::
 
-        $ ci-status migrate
-        $ ci-status staff_group
-        $ ci-status import_config config.yaml  # only if you have configuration
-        $ ci-status update
-        $ ci-status runserver 127.0.0.1:8080
+    6.1 Standalone run
+
+        ::
+
+            $ ci-status migrate
+            $ ci-status staff_group
+            $ ci-status import_config config.yaml  # only if you have configuration
+            $ ci-status update
+            $ ci-status runserver 127.0.0.1:8080
+
+    6.2 UWSGI + nginx run
+
+        ::
+
+            $ sudo apt-get install python-django-ci-status-uwsgi-nginx
+            $ ci-status migrate
+            $ ci-status staff_group
+            $ ci-status import_config config.yaml  # only if you have configuration
+            $ ci-status update
+            $ sudo service uwsgi start
+            $ sudo service nginx start
+
+    6.3 UWSGI configuration for application
+
+        ::
+
+            uwsgi:
+              plugins: python
+              env: DJANGO_SETTINGS_MODULE=ci_dashboard.settings
+              module: ci_dashboard.wsgi:application
+              master: True
+              processes: 5
+              socket: 127.0.0.1:6776
+              vacuum: True
+              die-on-term: true
+              uid: ci-status
+              gid: ci-status
 
 7. Install ``RabbitMQ`` server as a transport for celery tasks and celery itself:
     ::
