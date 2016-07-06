@@ -60,6 +60,7 @@ MIDDLEWARE_CLASSES = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'ci_dashboard.api.middleware.TokenAuthMiddleware',  # Authenticate using 'Token' header
 ]
 
 TEMPLATE_LOADERS = (

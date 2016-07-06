@@ -42,6 +42,7 @@
               {% endif %}
               {% if user|can_manage_statuses %}
                 <li><a href="{% url 'import_file' %}">Import CIs</a></li>
+                <li><a href="{% url 'generate_token' %}">Generate/Show token</a></li>
               {% endif %}
               <li><a href="{% url 'logout' %}?next=/">Logout</a></li>
             </ul>

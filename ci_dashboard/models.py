@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import jsonschema
 import logging
 import yaml
+import uuid
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -28,7 +29,6 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Stats(models.Model):
-
     name = models.CharField(max_length=255, unique=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -1219,5 +1219,16 @@ class ProductCiStatus(AbstractStatus):
         if not instance.version:
             instance.version = instance.product_ci.version
 
+
+class UserToken(models.Model):
+    token = models.UUIDField()
+    user = models.OneToOneField(User)
+
+    @staticmethod
+    def gen_token(sender, instance, *args, **kwargs):
+        instance.token = uuid.uuid4()
+
+
 pre_save.connect(ProductCiStatus.set_version, sender=ProductCiStatus)
 pre_delete.connect(Status.delele_unused_rulechecks, sender=Status)
+pre_save.connect(UserToken.gen_token, sender=UserToken)

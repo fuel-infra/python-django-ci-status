@@ -36,6 +36,7 @@ urlpatterns = [
         name='ci_dashboard_inline_dashboard'),
     url(r'^statuses/', include(statuses)),
     url(r'^import_file/$', views.import_file, name='import_file'),
+    url(r'^token/$', views.generate_token, name='generate_token'),
     url(r'^admin/', admin.site.urls),
     url(
         r'^history/(?P<pk>\d+)/$',

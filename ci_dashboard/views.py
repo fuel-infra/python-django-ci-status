@@ -16,7 +16,7 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django import forms
 
-from ci_dashboard.models import CiSystem, ProductCi, Status
+from ci_dashboard.models import CiSystem, ProductCi, Status, UserToken
 
 
 LOGGER = logging.getLogger(__name__)
@@ -289,10 +289,13 @@ def status_delete(request, pk):
     return render(request, 'status_delete.html', context)
 
 
+@csrf_exempt
 @staff_member_required
 @permission_required('ci_system.add_cisystem', raise_exception=True)
 def import_file(request):
-    if request.POST and request.FILES:
+    is_json = request.META.get('HTTP_ACCEPT') == 'application/json'
+
+    if request.method == 'POST' and request.FILES:
         form = ImportFileForm(request.POST, request.FILES)
 
         if form.is_valid():
@@ -307,14 +310,14 @@ def import_file(request):
                     '{cis_imported} of total {cis_total} Ci Systems and '
                     '{ps_imported} of total {ps_total} Product Statuses '
                     'were imported.'
-                )
-
-                messages.info(request, success_message.format(
+                ).format(
                     cis_imported=import_result.get('cis_imported'),
                     cis_total=import_result.get('cis_total'),
                     ps_imported=import_result.get('ps_imported'),
                     ps_total=import_result.get('ps_total'),
-                ))
+                )
+
+                messages.info(request, success_message)
 
                 for error in import_result.get('errors', []):
                     messages.add_message(
@@ -323,11 +326,32 @@ def import_file(request):
                         error
                     )
 
+                if is_json:
+                    return HttpResponse(json.dumps({
+                        'status': 'ok',
+                        'message': success_message,
+                    }))
                 return redirect('ci_dashboard_index')
             else:
-                messages.error(request, 'Import file format is invalid.')
+                error_message = 'Import file format is invalid.'
+                if is_json:
+                    return HttpResponse(json.dumps({
+                        'status': 'error',
+                        'message': error_message,
+                    }))
+                messages.error(request, error_message)
                 return render(request, 'import_file.html', {'form': form})
     else:
         form = ImportFileForm()
 
         return render(request, 'import_file.html', {'form': form})
+
+
+@staff_member_required
+@permission_required('ci_system.add_cisystem', raise_exception=True)
+def generate_token(request):
+    token, created = UserToken.objects.get_or_create(user=request.user)
+    if not created and request.POST or not request.user.usertoken:
+        token.token = ''
+        token.save()
+    return render(request, 'token.html', {'token': token.token})
