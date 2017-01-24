@@ -23,7 +23,7 @@ Depends: python-amqp,
          python-jenkins,
          python-jsonschema,
          python-ldap,
-         python-mysqldb,
+         python-pymysql,
          ${misc:Depends},
          ${python:Depends}
 Description: Web application for CI system health and status tracking.
