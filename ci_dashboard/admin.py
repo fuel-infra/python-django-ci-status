@@ -25,6 +25,7 @@ class RuleAdmin(admin.ModelAdmin):
         'is_active'
     )
 
+
 admin.site.register(RuleCheck)
 admin.site.register(Rule, RuleAdmin)
 admin.site.register([CiSystem, ProductCi, Status, ProductCiStatus])

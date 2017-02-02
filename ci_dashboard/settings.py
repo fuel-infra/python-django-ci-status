@@ -154,6 +154,7 @@ def _load_schema(path):
         LOGGER.error('Can not parse `schema.json` file %s', exc)
     return None
 
+
 SCHEMA_PATH = os.path.join(os.path.dirname(__file__), 'schema.json')
 DEFAULT_SCHEMA_PATH = '/usr/share/ci-status/schema.json'
 
