@@ -19,7 +19,6 @@ from jenkins import Jenkins, JenkinsException
 
 import json
 
-from datetime import datetime
 from jenkins import NotFoundException
 from six.moves.urllib.request import Request
 
@@ -36,6 +35,99 @@ class Stats(models.Model):
 def update_last_sync_timestamp():
     last_sync, created = Stats.objects.get_or_create(name='last_sync')
     last_sync.save()
+
+
+class AbstractStatus(models.Model):
+
+    status_type = models.IntegerField(default=constants.STATUS_SUCCESS,
+                                      choices=constants.STATUS_TYPE_CHOICES)
+    summary = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default='')
+    is_manual = models.BooleanField(default=False)
+    user = models.ForeignKey(
+        User,
+        limit_choices_to={'is_staff': True},
+        on_delete=models.SET_NULL,
+        related_name="%(app_label)s_%(class)s_author",
+        blank=True,
+        null=True
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(default=timezone.now)
+    last_changed_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        abstract = True
+        ordering = ('created_at', 'id')
+
+    def __unicode__(self):
+        return self.text_for_type(self.status_type)
+
+    def status_text(self):
+        return self.text_for_type(self.status_type)
+
+    @staticmethod
+    def text_for_type(status_type):
+        return next(
+            (name
+             for idx, name
+             in constants.STATUS_TYPE_CHOICES
+             if idx == status_type),
+            'Aborted'
+        )
+
+    def author_username(self):
+        if self.is_manual:
+            if self.user:
+                author = self.user.username
+            else:
+                author = 'Inactive User'
+        else:
+            if self.user:
+                author = self.user.username
+            else:
+                author = 'Assigned Automatically'
+
+        return author
+
+
+class Status(AbstractStatus):
+
+    ci_system = models.ForeignKey('CiSystem', on_delete=models.CASCADE)
+
+    def __unicode__(self):
+        return '{status} (ci: "{ci}")'.format(
+            status=super(Status, self).__unicode__(),
+            ci=self.ci_system)
+
+    def get_absolute_url(self):
+        return reverse('status_detail', kwargs={'pk': self.pk})
+
+    def rule_checks(self):
+        return self.rulecheck_set.all()
+
+    def failed_rule_checks(self):
+        return self.rule_checks().filter(status_type=constants.STATUS_FAIL)
+
+    @staticmethod
+    def delele_unused_rulechecks(sender, instance, **kwargs):
+        for rule_check in instance.rule_checks():
+            if rule_check.status.count() == 1:
+                rule_check.delete()
+
+    @staticmethod
+    def get_type_by_check_results(rule_checks_mask):
+        if rule_checks_mask == {constants.STATUS_SUCCESS}:
+            return constants.STATUS_SUCCESS
+        elif rule_checks_mask == {constants.STATUS_ERROR}:
+            return constants.STATUS_ERROR
+        elif constants.STATUS_IN_PROGRESS in rule_checks_mask:
+            return constants.STATUS_IN_PROGRESS
+        elif constants.STATUS_FAIL in rule_checks_mask:
+            return constants.STATUS_FAIL
+
+        return constants.STATUS_SKIP
 
 
 class RuleException(Exception):
@@ -191,11 +283,9 @@ class Rule(models.Model):
         # are already parsed
         last_check = self.rulecheck_set.first()
         build_id = last_check.build_number if last_check else None
-        # TODO: queue isn't counting now, need to implement
-        running = queued = 0
 
         # iterating through all builds to find latest result which
-        # match our criterias
+        # match our criteria
         for number in range(last_build_id, last_build_id - limit - 1, -1):
             if number < 1:
                 LOGGER.warning(
@@ -243,17 +333,6 @@ class Rule(models.Model):
             if not gerrit_refspec_set or not gerrit_branch_set:
                 continue
 
-            if build_info['building']:
-                running += 1
-                continue
-
-            timestamp = timezone.make_aware(
-                datetime.fromtimestamp(build_info['timestamp'] / 1000),
-                timezone.get_current_timezone()
-            )
-            if self.last_updated and self.last_updated >= timestamp:
-                break
-
             # if project is started by upstream project, we can't detect
             # what has caused this run
             # TODO: make it possible to detect run
@@ -293,8 +372,6 @@ class Rule(models.Model):
                 rule=self,
                 build_number=build_id,
                 status_type=status,
-                running=running,
-                queued=queued,
                 last_successfull_build_link=success_build,
                 last_failed_build_link=failed_build,
                 created_at=self.last_updated)
@@ -332,7 +409,7 @@ class Rule(models.Model):
 
 class RuleCheck(models.Model):
     rule = models.ForeignKey(Rule, on_delete=models.CASCADE)
-    status = models.ManyToManyField('Status')
+    status = models.ManyToManyField(Status)
 
     status_type = models.IntegerField(default=constants.STATUS_SUCCESS,
                                       choices=constants.STATUS_TYPE_CHOICES)
@@ -404,6 +481,9 @@ class CiSystem(models.Model):
 
     def latest_status(self):
         return self.status_set.last()
+
+    def all_statuses_ordered(self):
+        return self.status_set.all().reverse()
 
     def _new_rulechecks_results(self):
         new_results = {}
@@ -1106,99 +1186,6 @@ class ProductCi(models.Model):
                     'during import: %s',
                     exc
                 )
-
-
-class AbstractStatus(models.Model):
-
-    status_type = models.IntegerField(default=constants.STATUS_SUCCESS,
-                                      choices=constants.STATUS_TYPE_CHOICES)
-    summary = models.CharField(max_length=255)
-    description = models.TextField(blank=True, default='')
-    is_manual = models.BooleanField(default=False)
-    user = models.ForeignKey(
-        User,
-        limit_choices_to={'is_staff': True},
-        on_delete=models.SET_NULL,
-        related_name="%(app_label)s_%(class)s_author",
-        blank=True,
-        null=True
-    )
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(default=timezone.now)
-    last_changed_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        abstract = True
-        ordering = ('created_at', 'id')
-
-    def __unicode__(self):
-        return self.text_for_type(self.status_type)
-
-    def status_text(self):
-        return self.text_for_type(self.status_type)
-
-    @staticmethod
-    def text_for_type(status_type):
-        return next(
-            (name
-             for idx, name
-             in constants.STATUS_TYPE_CHOICES
-             if idx == status_type),
-            'Aborted'
-        )
-
-    def author_username(self):
-        if self.is_manual:
-            if self.user:
-                author = self.user.username
-            else:
-                author = 'Inactive User'
-        else:
-            if self.user:
-                author = self.user.username
-            else:
-                author = 'Assigned Automatically'
-
-        return author
-
-
-class Status(AbstractStatus):
-
-    ci_system = models.ForeignKey('CiSystem', on_delete=models.CASCADE)
-
-    def __unicode__(self):
-        return '{status} (ci: "{ci}")'.format(
-            status=super(Status, self).__unicode__(),
-            ci=self.ci_system)
-
-    def get_absolute_url(self):
-        return reverse('status_detail', kwargs={'pk': self.pk})
-
-    def rule_checks(self):
-        return self.rulecheck_set.all()
-
-    def failed_rule_checks(self):
-        return self.rule_checks().filter(status_type=constants.STATUS_FAIL)
-
-    @staticmethod
-    def delele_unused_rulechecks(sender, instance, **kwargs):
-        for rule_check in instance.rule_checks():
-            if rule_check.status.count() == 1:
-                rule_check.delete()
-
-    @staticmethod
-    def get_type_by_check_results(rule_checks_mask):
-        if rule_checks_mask == {constants.STATUS_SUCCESS}:
-            return constants.STATUS_SUCCESS
-        elif rule_checks_mask == {constants.STATUS_ERROR}:
-            return constants.STATUS_ERROR
-        elif constants.STATUS_IN_PROGRESS in rule_checks_mask:
-            return constants.STATUS_IN_PROGRESS
-        elif constants.STATUS_FAIL in rule_checks_mask:
-            return constants.STATUS_FAIL
-
-        return constants.STATUS_SKIP
 
 
 class ProductCiStatus(AbstractStatus):

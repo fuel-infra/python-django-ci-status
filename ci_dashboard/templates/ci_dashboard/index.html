@@ -77,7 +77,7 @@
             <div class="tab-pane" role="tabpanel" id="panel{{ number }}v">
               <div class="row">
                 <div class="col-sm-12">
-                  {% for status in ci.status_set.all|slice:":10" %}
+                  {% for status in ci.all_statuses_ordered|slice:":10" %}
                     {% include "ci_dashboard/status_list_item.html" with status=status %}
                   {% endfor %}
                   <div class="panel panel-default">

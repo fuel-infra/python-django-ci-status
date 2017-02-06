@@ -8,7 +8,7 @@
         <h3 class='with-label'>
           {{ status.summary }}
           <small>
-            (at {{ status.last_changed_at|date:"M d Y H:i:s" }})
+            (at {{ status.updated_at|date:"M d Y H:i:s" }})
           </small>
         </h3>
         <a href="{% url 'status_detail' status.pk %}">(Details)</a>

@@ -10,7 +10,7 @@
     {% if statuses %}
       <div class="row">
         <div class="col-sm-12 col-md-offset-1 col-md-10">
-          {% for status in statuses %}
+          {% for status in statuses reversed %}
             {% include "ci_dashboard/status_list_item.html" with status=status %}
           {% endfor %}
         </div>

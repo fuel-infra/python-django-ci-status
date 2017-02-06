@@ -19,7 +19,7 @@
           <h3>
             <a href="{{ status_detail.ci_system.url }}" target="_blank">{{ status_detail.ci_system.name }}</a>
           </h3>
-          <p>{{ status_detail.last_changed_at|timesince }}</p>
+          <p>{{ status_detail.updated_at|timesince }}</p>
           <p>{{ status_detail.summary }}</p>
           {% if status_detail.description %}
             <hr>
